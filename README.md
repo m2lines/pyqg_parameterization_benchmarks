@@ -12,8 +12,11 @@ We develop these parameterizations and evaluation metrics with [`pyqg`](https://
 
 ## Repository structure
 
-TODO
+- [`dataset_description.ipynb`](./notebooks/dataset_description.ipynb) provides documentation for our publicly accessible data.
+- [`subgrid_forcing.ipynb`](./notebooks/subgrid_forcing.ipynb) demonstrates different forcings from [`coarsening_ops.py`](./src/pyqg_parameterization_benchmarks/coarsening_ops.py).
 
-## Citation
+## Running the code
 
-TODO
+1. Clone the repository
+1. Install locally as a package, e.g. with `pip install --editable .`
+1. In Python, `import pyqg_parameterization_benchmarks`

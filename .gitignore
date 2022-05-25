@@ -1,3 +1,4 @@
-.sw[a-z]
 **/__pycache__
 **/.ipynb_checkpoints
+**/*egg-info
+**/*.sw[a-z]
