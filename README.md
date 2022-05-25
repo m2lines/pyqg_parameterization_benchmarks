@@ -14,9 +14,11 @@ We develop these parameterizations and evaluation metrics with [`pyqg`](https://
 
 - [`dataset_description.ipynb`](./notebooks/dataset_description.ipynb) provides documentation for our publicly accessible data.
 - [`subgrid_forcing.ipynb`](./notebooks/subgrid_forcing.ipynb) demonstrates different forcings from [`coarsening_ops.py`](./src/pyqg_parameterization_benchmarks/coarsening_ops.py).
+- [`hybrid_symbolic.ipynb`](./notebooks/hybrid_symbolic.ipynb) demonstrates running hybrid symbolic regression based on [`hybrid_symbolic.py`](./src/pyqg_parameterization_benchmarks/hybrid_symbolic.py)
 
 ## Running the code
 
 1. Clone the repository
 1. Install locally as a package, e.g. with `pip install --editable .`
+1. Ensure the tests pass by running `pytest`
 1. In Python, `import pyqg_parameterization_benchmarks`

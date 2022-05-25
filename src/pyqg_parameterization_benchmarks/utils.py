@@ -5,7 +5,11 @@ import numpy as np
 import xarray as xr
 
 class Parameterization(pyqg.Parameterization):
-    """Helper class for defining parameterizations."""
+    """Helper class for defining parameterizations. This extends the normal
+    pyqg parameterization framework to handle prediction of either subgrid
+    forcings or fluxes, as well as to apply to either pyqg.Models or
+    xarray.Datasets."""
+    
     @property
     def targets(self):
         raise NotImplementedError
@@ -15,7 +19,7 @@ class Parameterization(pyqg.Parameterization):
         
     @property
     def nx(self):
-        return 64
+        return 64 # Future work should generalize this.
 
     @property
     def parameterization_type(self):
@@ -45,6 +49,8 @@ class Parameterization(pyqg.Parameterization):
             return tuple(arr(preds[k]) for k in keys)
 
     def run_online(self, sampling_freq=1000, **kw):
+        """Run a parameterized pyqg.QGModel, saving snapshots every 1000h."""
+        
         # Initialize a pyqg model with this parameterization
         params = dict(kw)
         params[self.parameterization_type] = self
@@ -64,7 +70,7 @@ class Parameterization(pyqg.Parameterization):
         # part of the timeseries; resolve this by saving the most recent
         # diagnostics (they're already time-averaged so this is ok)
         for k,v in snapshots[-1].variables.items():
-            if k not in d:
+            if k not in ds:
                 ds[k] = v.isel(time=-1)
 
         # Drop complex variables since they're redundant and can't be saved
@@ -74,6 +80,9 @@ class Parameterization(pyqg.Parameterization):
         return ds
 
     def test_offline(self, dataset):
+        """Evaluate the parameterization on an offline dataset,
+        computing a variety of metrics."""
+        
         test = dataset[self.targets]
         
         for key, val in self.predict(dataset).items():
@@ -116,7 +125,8 @@ class Parameterization(pyqg.Parameterization):
 
 class FeatureExtractor:
     """Helper class for taking spatial derivatives and translating string
-    expressions into data."""
+    expressions into data. Works with either pyqg.Model or xarray.Dataset."""
+    
     def __call__(self, feature_or_features, flat=False):
         arr = lambda x: x.data if isinstance(x, xr.DataArray) else x
         if isinstance(feature_or_features, str):
@@ -196,6 +206,9 @@ class FeatureExtractor:
 
     # Main function: interpreting a string as a feature
     def extract_feature(self, feature):
+        """Evaluate a string feature, e.g. laplacian(advected(curl(u,v)))."""
+        
+        # Helper to recurse on each side of an arity-2 expression
         def extract_pair(s):
             depth = 0
             for i, char in enumerate(s):
@@ -210,6 +223,9 @@ class FeatureExtractor:
         real_or_spectral = lambda arr: arr + [a+'h' for a in arr]
             
         if not self.extracted(feature):
+            # Check if the feature looks like "function(expr1, expr2)"
+            # (better would be to write a grammar + use a parser,
+            # but this is a very simple DSL)
             match = re.search(f"^([a-z]+)\((.*)\)$", feature)
             if match:
                 op, inner = match.group(1), match.group(2)
@@ -224,8 +240,10 @@ class FeatureExtractor:
                 else:
                     raise ValueError(f"could not interpret {feature}")
             elif re.search(f"^[\-\d\.]+$", feature):
+                # ensure numbers still work
                 return float(feature)
             elif feature == 'streamfunction':
+                # hack to make streamfunctions work in both datasets & pyqg.Models
                 self.cache[feature] = self.ifft(self['ph'])
             else:
                 raise ValueError(f"could not interpret {feature}")
@@ -235,7 +253,7 @@ class FeatureExtractor:
     def extracted(self, key):
         return key in self.cache or hasattr(self.m, key)
 
-    # A bit of hackery to allow for the reading of features or properties
+    # A bit of additional hackery to allow for the reading of features or properties
     def __getitem__(self, q):
         if isinstance(q, str):
             if q in self.cache:

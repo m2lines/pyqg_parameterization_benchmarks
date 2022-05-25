@@ -1,7 +1,9 @@
 import pyqg
 import gplearn
+import gplearn.genetic
 import numpy as np
 import xarray as xr
+from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression
 from pyqg_parameterization_benchmarks.utils import FeatureExtractor, Parameterization
 
@@ -31,19 +33,18 @@ def make_custom_gplearn_functions(ds):
 
 def run_gplearn_iteration(ds, target,
         base_features=['q','u','v'],
-        base_functions=['add','mul']):
+        base_functions=['add','mul'],
+        **kwargs):
     """Run gplearn for one iteration using custom spatial derivatives."""
 
     # Flatten the input and target data
     x = np.array([ds[feature].data.reshape(-1)
                 for feature in base_features]).T
     y = target.reshape(-1)
-
-    # Configure gplearn to run with a relatively small population
-    # and for relatively few generations (again for performance)
-    sr = gplearn.genetic.SymbolicRegressor(
-        population_size=1000,
-        generations=10,
+    
+    gplearn_kwargs = dict(
+        population_size=5000,
+        generations=50,
         p_crossover=0.7,
         p_subtree_mutation=0.1,
         p_hoist_mutation=0.05,
@@ -53,10 +54,18 @@ def run_gplearn_iteration(ds, target,
         parsimony_coefficient=0.001,
         metric='pearson', # IMPORTANT: fit using pearson correlation, not MSE
         const_range=(-2,2),
+    )
+    
+    gplearn_kwargs.update(**kwargs)
+
+    # Configure gplearn to run with a relatively small population
+    # and for relatively few generations (again for performance)
+    sr = gplearn.genetic.SymbolicRegressor(
         feature_names=base_features,
         function_set=(
             base_functions + make_custom_gplearn_functions(ds) # use our custom ops
-        )
+        ),
+        **gplearn_kwargs
     )
 
     # Fit the model
@@ -116,29 +125,39 @@ class LinearSymbolicRegression(Parameterization):
                 )
             )
         return kls(*lrs, inputs, target)  
+    
+def corr(a,b):
+    return pearsonr(np.array(a.data).ravel(), np.array(b.data).ravel())[0]
 
 def hybrid_symbolic_regression(ds, target='q_subgrid_forcing', max_iters=10, verbose=True, **kw):
-    ds['_residual'] = ds[target]
-
+    extract = FeatureExtractor(ds)
+    residual = ds[target]
     terms = []
+    vals = []
     lrs = []
-
+    
     try:
         for i in range(max_iters):
             for lev in [0,1]:
-                sr = run_gplearn_symbolic_regression(ds.isel(lev=lev), target='_residual', **kw)
-                terms.append(str(sr._program))
-            lr = LinearRegressionParameterization.fit(ds, terms, target)
-            lrs.append(lr)
-            preds = lr.test_offline(ds).load()
-            ds['_residual'] = (ds[target] - preds[f"{target}_predictions"]).load()
+                sr = run_gplearn_iteration(ds.isel(lev=lev),
+                                           target=residual.isel(lev=lev).data,
+                                           **kw)
+                new_term = str(sr._program)
+                new_vals = extract(new_term)
+                # Prevent spurious duplicates, e.g. ddx(q) and ddx(add(1,q))
+                if not any(corr(new_vals, v) > 0.99 for v in vals):
+                    terms.append(new_term)
+                    vals.append(new_vals)
+            lrs.append(LinearSymbolicRegression.fit(ds, terms, target))
+            preds = lrs[-1].test_offline(ds).load()
+            residual = (ds[target] - preds[f"{target}_predictions"]).load()
             if verbose:
                 print(f"Iteration {i+1}")
-                print("Discovered features:", discovered)
-                print("Training correlations:", preds.correlation.data)
+                print("Discovered terms:", terms)
+                print("Train correlations:", preds.correlation.data)
 
     except KeyboardInterrupt:
         if verbose:
             print("Exiting early due to keyboard interrupt")
 
-    return discovered, lrs
+    return terms, lrs
