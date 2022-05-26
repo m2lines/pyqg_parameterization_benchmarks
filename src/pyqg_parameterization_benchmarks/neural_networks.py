@@ -241,7 +241,7 @@ def train(net, inputs, targets, num_epochs=50, batch_size=64, learning_rate=0.00
         print(f"Loss after Epoch {epoch+1}: {epoch_loss/epoch_steps}")
         scheduler.step()
 
-class CNNParameterization(Parameterization):
+class FCNNParameterization(Parameterization):
     def __init__(self, directory, models=None, **kw):
         self.directory = directory
         self.models = models if models is not None else [
