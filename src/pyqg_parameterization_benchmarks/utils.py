@@ -266,3 +266,32 @@ class FeatureExtractor:
             return q
         else:
             raise KeyError(q)
+
+def energy_budget_term(model, term):
+    val = model[term]
+    if 'paramspec_' + term in model:
+        val += model['paramspec_' + term]
+    return val.sum('l')
+
+def energy_budget_figure(models, skip=0):
+    import matplotlib.pyplot as plt
+    fig = plt.figure(figsize=(12,5))
+    vmax = 0
+    for i,term in enumerate(['KEflux','APEflux','APEgenspec','KEfrictionspec']):
+        plt.subplot(1,4,i+1,title=term)
+        plt.axhline(0,color='gray', ls='--')
+        
+        for model, label in models:
+            spec = energy_budget_term(model, term)
+            plt.semilogx(model.k[skip:], spec[skip:],
+                         label=label, lw=3, ls=('--' if '+' in label else '-'))
+            vmax = max(vmax, spec[skip:].max())
+        plt.grid(which='both',alpha=0.25)
+        if i == 0: plt.ylabel("Energy transfer $[m^2 s^{-3}]$")
+        else: plt.gca().set_yticklabels([])
+        if i == 3: plt.legend()
+        plt.xlabel("Zonal wavenumber $[m^{-1}]$")
+    for ax in fig.axes:
+        ax.set_ylim(-vmax, vmax)
+    plt.tight_layout()
+    return fig
