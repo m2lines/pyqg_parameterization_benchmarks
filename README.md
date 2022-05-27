@@ -1,6 +1,6 @@
 # Benchmarking of machine learning ocean parameterizations in an idealized model
 
-In this repository, we present code, data, and parameterizations to explore and reproduce results from [Benchmarking of machine learning ocean parameterizations in an idealized model](#).
+In this repository, we present code, data, and parameterizations to explore and reproduce results from _Benchmarking of machine learning ocean parameterizations in an idealized model_ (in preparation).
 
 ## Main idea
 
@@ -25,4 +25,8 @@ We develop these parameterizations and evaluation metrics with [`pyqg`](https://
 1. Install locally as a package, e.g. with `pip install --editable .`
 1. Ensure the tests pass by running `pytest`
 
-After this, you should be able to `import pyqg_parameterization_benchmarks`.
+After this, you should be able to `import pyqg_parameterization_benchmarks` and run all of the [notebooks](./notebooks).
+
+## Citation
+
+TODO
