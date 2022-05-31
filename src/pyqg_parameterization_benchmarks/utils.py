@@ -1,10 +1,8 @@
 import re
 import pyqg
-import pyqg.diagnostic_tools
 import operator
 import numpy as np
 import xarray as xr
-from scipy.stats import wasserstein_distance
 
 class Parameterization(pyqg.Parameterization):
     """Helper class for defining parameterizations. This extends the normal

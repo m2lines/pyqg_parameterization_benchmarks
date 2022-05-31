@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 from pyqg_parameterization_benchmarks.utils import FeatureExtractor
 from pyqg_parameterization_benchmarks.hybrid_symbolic import LinearSymbolicRegression
-from pyqg_parameterization_benchmarks.neural_networks import CNNParameterization
+from pyqg_parameterization_benchmarks.neural_networks import FCNNParameterization
 import pytest
 
 def test_feature_extractor():
@@ -40,7 +40,7 @@ def test_linear_symbolic():
 def test_neural_network():
     path = os.path.join(os.path.dirname(__file__), '../../../models/fcnn_q_to_Sqtot1')
 
-    cnn_param = CNNParameterization(path)
+    cnn_param = FCNNParameterization(path)
 
     assert len(cnn_param.models) == 2
 
