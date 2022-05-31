@@ -1,6 +1,7 @@
 matplotlib
 numpy
 scipy
+scikit-learn
 torch
 xarray
 gplearn
