@@ -16,8 +16,7 @@ We develop these parameterizations and evaluation metrics with [`pyqg`](https://
 - [`subgrid_forcing.ipynb`](./notebooks/subgrid_forcing.ipynb) demonstrates different forcings from [`coarsening_ops.py`](./src/pyqg_parameterization_benchmarks/coarsening_ops.py).
 - [`hybrid_symbolic.ipynb`](./notebooks/hybrid_symbolic.ipynb) demonstrates running symbolic regression based on [`hybrid_symbolic.py`](./src/pyqg_parameterization_benchmarks/hybrid_symbolic.py).
 - [`neural_networks.ipynb`](./notebooks/neural_networks.ipynb) demonstrates running fully convolutional neural network parameterizations.
-
-[Baseline parameterizations](https://pyqg.readthedocs.io/en/latest/api.html#parameterizations) and [online similiarity metrics](https://pyqg.readthedocs.io/en/latest/api.html#pyqg.diagnostic_tools.diagnostic_similarities) are now implemented in `pyqg` itself.
+- [`online_metrics.ipynb`](./notebooks/online_metrics.ipynb) demonstrates how to compute online similarity metrics between neural networks, symbolic regression, and baseline physical parameterizations.
 
 ## Running the code
 
