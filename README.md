@@ -21,8 +21,9 @@ We develop these parameterizations and evaluation metrics with [`pyqg`](https://
 ## Running the code
 
 1. Clone the repository
-1. Install locally as a package, e.g. with `pip install --editable .`
-1. Ensure the tests pass by running `pytest`
+2. Install the requirements, e.g. with `pip install -r requirements.txt`
+3. Install locally as a package, e.g. with `pip install --editable .`
+4. Ensure the tests pass by running `pytest`
 
 After this, you should be able to `import pyqg_parameterization_benchmarks` and run all of the [notebooks](./notebooks).
 
