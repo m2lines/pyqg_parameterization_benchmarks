@@ -5,4 +5,4 @@ scikit-learn
 torch
 xarray
 gplearn
-pyqg==0.7.2
+pyqg>=0.7.2
