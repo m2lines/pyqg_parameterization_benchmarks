@@ -1,14 +1,14 @@
 # Benchmarking of machine learning ocean parameterizations in an idealized model
 
-In this repository, we present code, data, and parameterizations to explore and reproduce results from _Benchmarking of machine learning ocean parameterizations in an idealized model_ (in preparation).
+In this repository, we present code, data, and parameterizations to explore and reproduce results from _Benchmarking of machine learning ocean parameterizations in an idealized model_ (to be submitted).
 
 ## Main idea
 
-Ocean models attempt to simulate continuous processes, but are discrete and run at finite resolution. The error incurred by discretization, however, can be approximated by _subgrid parameterizations_ and corrected at every timestep.  Subgrid parameterizations can be formulated and derived in many ways, e.g. as equations derived by physical analysis, as a neural network learned from data, or as equations again but learned from data with symbolic regression. In this work, we evaluate parameterizations of each kind.
+Ocean and climate models attempt to simulate continuous processes, but are discrete and run at finite resolution. The error incurred by discretization on a finite grid, however, can be approximated by _subgrid parameterizations_ and corrected at every timestep.  Subgrid parameterizations are attempting to capture the effects of scales that are not resolved on the finite grid of the climate or ocean models we are using. Subgrid parameterizations can be formulated and derived in many ways, e.g. as equations derived by physical analysis, as a neural network learned from data, or as equations again but learned from data with symbolic regression. In this work, we evaluate parameterizations of each kind.
 
-Because the field of learning data-driven parameterizations is relatively new, however, there isn't a clear consensus on how to evaluate them. So in addition to contributing new parameterizations, we also provide new datasets and evaluation schemes, defining various ways of measuring to what extent a parameterization brings characteristics of low-resolution simulations into closer alignment with those of high-resolution simulations (which are assumed to be a better approximation of the true continuous system we want to model).
+Because the field of learning data-driven parameterizations is relatively new, however, there isn't a clear consensus on how to evaluate them. So in addition to contributing new parameterizations, we also provide new datasets and evaluation schemes, defining various ways of measuring to what extent a parameterization brings characteristics of low-resolution simulations into closer alignment with those of high-resolution simulations (which are assumed to be a better approximation of the true continuous system we want to model). 
 
-We develop these parameterizations and evaluation metrics with [`pyqg`](https://pyqg.readthedocs.io/en/latest/), an open-source Python framework for running quasi-geostrophic ocean simulations.
+We develop these parameterizations and evaluation metrics with [`pyqg`](https://pyqg.readthedocs.io/en/latest/), an open-source Python framework for running quasi-geostrophic ocean simulations. We are building this tool as part of a model hierarchy to ensure robust testing and validation of subgrid parameterizations for ocean and climate models.
 
 ## Repository structure
 
