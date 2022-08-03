@@ -1,6 +1,6 @@
 # Benchmarking of machine learning ocean parameterizations in an idealized model
 
-In this repository, we present code, data, and parameterizations to explore and reproduce results from _Benchmarking of machine learning ocean parameterizations in an idealized model_ (Submitted TO JAMES, https://www.essoar.org/doi/10.1002/essoar.10511742.1).
+In this repository, we present code, data, and parameterizations to explore and reproduce results from _Benchmarking of machine learning ocean parameterizations in an idealized model_ (Submitted to JAMES, https://www.essoar.org/doi/10.1002/essoar.10511742.1).
 
 ## Main idea
 
