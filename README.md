@@ -1,6 +1,6 @@
 # Benchmarking of machine learning ocean parameterizations in an idealized model
 
-In this repository, we present code, data, and parameterizations to explore and reproduce results from _Benchmarking of machine learning ocean parameterizations in an idealized model_ (Submitted to JAMES, https://www.essoar.org/doi/10.1002/essoar.10511742.2).
+In this repository, we present code, data, and parameterizations to explore and reproduce results from _Benchmarking of machine learning ocean parameterizations in an idealized model_ (published in JAMES, https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2022MS003258).
 
 ## Main idea
 
@@ -26,3 +26,19 @@ We develop these parameterizations and evaluation metrics with [`pyqg`](https://
 4. Ensure the tests pass by running `pytest`
 
 After this, you should be able to `import pyqg_parameterization_benchmarks` and run all of the [notebooks](./notebooks).
+
+## Citation
+
+```
+@article{ross2022benchmarking,
+  author = {Ross, Andrew and Li, Ziwei and Perezhogin, Pavel and Fernandez-Granda, Carlos and Zanna, Laure},
+  title = {Benchmarking of machine learning ocean subgrid parameterizations in an idealized model},
+  journal = {Journal of Advances in Modeling Earth Systems},
+  year = {2022},
+  pages = {e2022MS003258},
+  doi = {https://doi.org/10.1029/2022MS003258},
+  url = {https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2022MS003258},
+  eprint = {https://agupubs.onlinelibrary.wiley.com/doi/pdf/10.1029/2022MS003258},
+  note = {e2022MS003258 2022MS003258}
+}
+```
