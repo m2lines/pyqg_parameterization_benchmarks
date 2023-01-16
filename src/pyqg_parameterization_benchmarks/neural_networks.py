@@ -303,7 +303,7 @@ class FCNNParameterization(Parameterization):
         for z, model in enumerate(models):
             model_dir = os.path.join(directory, f"models/{z}")
             if os.path.exists(model_dir):
-                models2.append(FullyCNN.load(model_dir))
+                trained.append(FullyCNN.load(model_dir))
             else:
                 X = model.extract_inputs(dataset)
                 Y = model.extract_targets(dataset)
