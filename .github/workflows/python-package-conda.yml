@@ -23,10 +23,10 @@ jobs:
         conda env update --file requirements.conda.yaml --name base
     - name: Format with black
       run: |
-        black
+        black $(git ls-files '*.py')
     - name: Lint with Pylint
       run: |
-        pylint
+        pylint $(git ls-files '*.py')
     - name: Test with pytest
       run: |
-        pytest
+        pytest tests
