@@ -1,8 +1,10 @@
 """Module containing neural networks."""
 import os
 import glob
-import pyqg
 import pickle
+
+
+import pyqg
 import torch
 import torch.nn as nn
 import torch.optim as optim
