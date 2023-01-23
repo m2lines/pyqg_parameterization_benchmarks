@@ -24,6 +24,9 @@ jobs:
     - name: Format with black
       run: |
         black
+    - name: Lint with Pylint
+      run: |
+        pylint
     - name: Test with pytest
       run: |
         pytest
