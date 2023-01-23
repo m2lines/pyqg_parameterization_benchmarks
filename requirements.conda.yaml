@@ -4,15 +4,21 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - astroid=2.11.7
+  - black=22.6.0
   - blas=1.0
   - bzip2=1.0.8
   - ca-certificates=2022.12.7
   - certifi=2022.12.7
+  - click=8.0.4
+  - dill=0.3.6
   - fftw=3.3.9
   - flit-core=3.6.0
   - gplearn=0.4.2
   - intel-openmp=2021.4.0
+  - isort=5.9.3
   - joblib=1.1.1
+  - lazy-object-proxy=1.6.0
   - libblas=3.9.0
   - libcblas=3.9.0
   - libcxx=14.0.6
@@ -22,18 +28,23 @@ dependencies:
   - liblapack=3.9.0
   - libzlib=1.2.13
   - llvm-openmp=14.0.6
+  - mccabe=0.7.0
   - mkl=2021.4.0
   - mkl-service=2.4.0
   - mkl_fft=1.3.1
   - mkl_random=1.2.2
+  - mypy_extensions=0.4.3
   - ncurses=6.3
   - numpy=1.23.5
   - numpy-base=1.23.5
   - openssl=1.1.1s
   - packaging=23.0
   - pandas=1.5.3
+  - pathspec=0.9.0
   - pip=22.3.1
+  - platformdirs=2.5.2
   - pyfftw=0.13.1
+  - pylint=2.14.5
   - pyqg=0.7.2
   - python=3.10.9
   - python-dateutil=2.8.2
@@ -49,9 +60,12 @@ dependencies:
   - tbb=2021.7.0
   - threadpoolctl=2.2.0
   - tk=8.6.12
+  - tomli=2.0.1
+  - tomlkit=0.11.1
   - typing_extensions=4.4.0
   - tzdata=2022g
   - wheel=0.37.1
+  - wrapt=1.14.1
   - xarray=2023.1.0
   - xz=5.2.10
   - zlib=1.2.13
