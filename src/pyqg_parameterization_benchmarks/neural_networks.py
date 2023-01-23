@@ -206,15 +206,15 @@ class ChannelwiseScaler(BasicScaler):
     def __init__(self, x, zero_mean=False):
         assert len(x.shape) == 4
         if zero_mean:
-            mu = 0
+            mean = 0
         else:
-            mu = np.array([x[:, i].mean() for i in range(x.shape[1])])[
+            mean = np.array([x[:, i].mean() for i in range(x.shape[1])])[
                 np.newaxis, :, np.newaxis, np.newaxis
             ]
         std_dev = np.array([x[:, i].std() for i in range(x.shape[1])])[
             np.newaxis, :, np.newaxis, np.newaxis
         ]
-        super().__init__(mu, std_dev)
+        super().__init__(mean, std_dev)
 
 
 def minibatch(*arrays, batch_size=64, as_tensor=True, shuffle=True):
