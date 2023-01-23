@@ -211,10 +211,10 @@ class ChannelwiseScaler(BasicScaler):
             mu = np.array([x[:, i].mean() for i in range(x.shape[1])])[
                 np.newaxis, :, np.newaxis, np.newaxis
             ]
-        sd = np.array([x[:, i].std() for i in range(x.shape[1])])[
+        std_dev = np.array([x[:, i].std() for i in range(x.shape[1])])[
             np.newaxis, :, np.newaxis, np.newaxis
         ]
-        super().__init__(mu, sd)
+        super().__init__(mu, std_dev)
 
 
 def minibatch(*arrays, batch_size=64, as_tensor=True, shuffle=True):
