@@ -6,8 +6,8 @@ import pickle
 
 import pyqg
 import torch
-import torch.nn as nn
-import torch.optim as optim
+from torch import nn, optim
+
 import numpy as np
 from torch.autograd import grad, Variable
 from pyqg_parameterization_benchmarks.utils import FeatureExtractor, Parameterization
