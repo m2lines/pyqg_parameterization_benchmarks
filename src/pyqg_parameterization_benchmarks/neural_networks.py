@@ -1,3 +1,4 @@
+"""Module containing neural networks."""
 import os
 import glob
 import pyqg
