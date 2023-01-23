@@ -20,7 +20,7 @@ jobs:
         echo $CONDA/bin >> $GITHUB_PATH
     - name: Install dependencies
       run: |
-        conda env update --file requirements.conda.yaml --name pyqg_param
+        conda env update --file requirements.conda.yaml --name base
     - name: Format with black
       run: |
         black
