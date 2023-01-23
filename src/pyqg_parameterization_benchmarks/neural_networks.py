@@ -7,8 +7,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
-import xarray as xr
-from collections import OrderedDict
 from torch.autograd import grad, Variable
 from pyqg_parameterization_benchmarks.utils import FeatureExtractor, Parameterization
 
