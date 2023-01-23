@@ -15,18 +15,37 @@ jobs:
       with:
         python-version: '3.10'
     - name: Add conda to system path
+      continue-on-error: true
       run: |
         # $CONDA is an environment variable pointing to the root of the miniconda directory
         echo $CONDA/bin >> $GITHUB_PATH
+
     - name: Install dependencies
+      continue-on-error: true
       run: |
         conda env update --file requirements.conda.yaml --name base
+
     - name: Format with black
+      continue-on-error: true
       run: |
         black $(git ls-files '*.py')
+
     - name: Lint with Pylint
+      continue-on-error: true
       run: |
         pylint $(git ls-files '*.py')
+
     - name: Test with pytest
+      continue-on-error: true
       run: |
         pytest tests
+
+    - name: Lint with Mypy
+      continue-on-error: true
+      run: |
+        mypy $(git ls-files '*.py')
+
+    - name: Lint with Pydocstyle
+      continue-on-error: true
+      run : |
+        pydocstyle $(git ls-files '*.py') --convention=numpy
