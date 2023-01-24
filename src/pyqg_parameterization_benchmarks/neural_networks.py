@@ -1,5 +1,4 @@
 """Module containing neural networks."""
-from typing import List
 import os
 import glob
 import pickle
@@ -7,16 +6,31 @@ import pickle
 
 import pyqg
 import torch
-from torch import nn, optim
+from torch.nn import Sequential, Conv2d, BatchNorm2d, ReLU, MSELoss
+from torch import optim
 from torch.autograd import grad, Variable
 
 import numpy as np
 from pyqg_parameterization_benchmarks.utils import FeatureExtractor, Parameterization
 
 
-class FullyCNN(nn.Sequential):
-    """Pytorch class defining our CNN architecture, plus some helpers for
-    dealing with constraints and scaling."""
+class FullyCNN(Sequential):
+    """CNN model plus helpers for dealing with constraints and scaling.
+
+    Parameters
+    ----------
+    inputs : ???
+        The inputs to the model. Tensors?
+    targets : ???
+        The targets/ground truths. Tensors?
+    padding : str, optional
+        The padding argument. The options seem to be ``None``, ``"circular"``
+        or ``"same"``, with zero explanation.
+    zero_mean : bool
+        Controls whether the mean of each channel is standardised to zero
+        after being passed through the ``forward`` method.
+
+    """
 
     def __init__(self, inputs, targets, padding="circular", zero_mean=True):
         """Build ``FullyCNN``."""
@@ -39,14 +53,14 @@ class FullyCNN(nn.Sequential):
             kw["padding_mode"] = "circular"
 
         super().__init__(
-            *self._make_subblock(nn.Conv2d(n_in, 128, 5, padding=padding_5, **kw)),
-            *self._make_subblock(nn.Conv2d(128, 64, 5, padding=padding_5, **kw)),
-            *self._make_subblock(nn.Conv2d(64, 32, 3, padding=padding_3, **kw)),
-            *self._make_subblock(nn.Conv2d(32, 32, 3, padding=padding_3, **kw)),
-            *self._make_subblock(nn.Conv2d(32, 32, 3, padding=padding_3, **kw)),
-            *self._make_subblock(nn.Conv2d(32, 32, 3, padding=padding_3, **kw)),
-            *self._make_subblock(nn.Conv2d(32, 32, 3, padding=padding_3, **kw)),
-            *nn.Conv2d(32, n_out, 3, padding=padding_3),
+            self._make_subblock(Conv2d(n_in, 128, 5, padding=padding_5, **kw)),
+            self._make_subblock(Conv2d(128, 64, 5, padding=padding_5, **kw)),
+            self._make_subblock(Conv2d(64, 32, 3, padding=padding_3, **kw)),
+            self._make_subblock(Conv2d(32, 32, 3, padding=padding_3, **kw)),
+            self._make_subblock(Conv2d(32, 32, 3, padding=padding_3, **kw)),
+            self._make_subblock(Conv2d(32, 32, 3, padding=padding_3, **kw)),
+            self._make_subblock(Conv2d(32, 32, 3, padding=padding_3, **kw)),
+            Conv2d(32, n_out, 3, padding=padding_3),
         )
 
         self.is_zero_mean = zero_mean
@@ -55,13 +69,13 @@ class FullyCNN(nn.Sequential):
         r = super().forward(x)
         if self.is_zero_mean:
             return r - r.mean(dim=(1, 2, 3), keepdim=True)
-        else:
-            return r
 
-    def _make_subblock(self, conv: nn.Conv2d) -> List[nn.Module]:
+        return r
+
+    def _make_subblock(self, conv: Conv2d) -> Sequential:
         """Create a two-dimensional convolutional subblock.
 
-        Conv2d -> ReLU -> BatchNorm2d
+        ``Conv2d`` -> ``ReLU`` -> ``BatchNorm2d``
 
         Parameters
         ----------
@@ -71,10 +85,11 @@ class FullyCNN(nn.Sequential):
         Returns
         -------
         List[Module]
-            A list of the layers in the subblock.
+            A list of the layers in the subblock:
+            ``Conv2d`` -> ``ReLU`` -> ``BatchNorm2d``.
 
         """
-        return [conv, nn.ReLU(), nn.BatchNorm2d(conv.out_channels)]
+        return Sequential(conv, ReLU(), BatchNorm2d(conv.out_channels))
 
     def extract_vars(self, m, features, dtype=np.float32):
         ex = FeatureExtractor(m)
@@ -263,7 +278,7 @@ def train(
         ],
         gamma=0.1,
     )
-    criterion = nn.MSELoss()
+    criterion = MSELoss()
     for epoch in range(num_epochs):
         epoch_loss = 0.0
         epoch_steps = 0
