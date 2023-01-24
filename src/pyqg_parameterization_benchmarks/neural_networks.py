@@ -1,5 +1,5 @@
 """Module containing neural networks."""
-from typing import Dict, Tuple, Any
+from typing import Tuple
 import os
 import glob
 import pickle
@@ -7,6 +7,7 @@ import pickle
 
 import pyqg
 import torch
+from torch import Tensor
 from torch.nn import Sequential, Conv2d, BatchNorm2d, ReLU, MSELoss
 from torch import optim
 from torch.autograd import grad, Variable
@@ -33,7 +34,16 @@ class FullyCNN(Sequential):
 
     """
 
-    def __init__(self, inputs, targets, padding="circular", zero_mean=True):
+    # TODO: Supply types for ``inputs`` and ``targets`` in docstring.
+
+    # TODO: Complete type-hinting in __init__ def.
+    def __init__(
+        self,
+        inputs,
+        targets,
+        padding: str = "circular",
+        zero_mean: bool = True,
+    ):
         """Build ``FullyCNN``."""
         self.padding = padding
         self.is_zero_mean = zero_mean
@@ -88,12 +98,25 @@ class FullyCNN(Sequential):
 
         return padding_3, padding_5
 
-    def forward(self, x):
-        r = super().forward(x)
-        if self.is_zero_mean:
-            return r - r.mean(dim=(1, 2, 3), keepdim=True)
+    def forward(self, x: Tensor) -> Tensor:  # pylint: disable=arguments-renamed
+        """Pass ``x`` through the model.
 
-        return r
+        Parameters
+        ----------
+        x : Tensor
+            A mini-batch of inputs.
+
+        Returns
+        -------
+        r : Tensor
+            The result of passing ``x`` through the model.
+
+        """
+        out = super().forward(x)
+        if self.is_zero_mean:
+            return out - out.mean(dim=(1, 2, 3), keepdim=True)
+
+        return out
 
     def extract_vars(self, m, features, dtype=np.float32):
         ex = FeatureExtractor(m)
@@ -162,7 +185,7 @@ class FullyCNN(Sequential):
         except:
             return preds
 
-    def mse(self, inputs, targets, **kw):
+    def mse(self, inputs, targets):
         y_true = targets.reshape(-1, np.prod(targets.shape[1:]))
         y_pred = self.predict(inputs).reshape(-1, np.prod(targets.shape[1:]))
         return np.mean(np.sum((y_pred - y_true) ** 2, axis=1))
@@ -403,15 +426,15 @@ class FCNNParameterization(Parameterization):
 
         # Train models on dataset and save them
         trained = []
-        for z, model in enumerate(models):
-            model_dir = os.path.join(directory, f"models/{z}")
+        for idx, model in enumerate(models):
+            model_dir = os.path.join(directory, f"models/{idx}")
             if os.path.exists(model_dir):
                 trained.append(FullyCNN.load(model_dir))
             else:
-                X = model.extract_inputs(dataset)
-                Y = model.extract_targets(dataset)
-                model.fit(X, Y, num_epochs=num_epochs, **kw)
-                model.save(os.path.join(directory, f"models/{z}"))
+                x_items = model.extract_inputs(dataset)
+                y_items = model.extract_targets(dataset)
+                model.fit(x_items, y_items, num_epochs=num_epochs, **kw)
+                model.save(os.path.join(directory, f"models/{idx}"))
                 trained.append(model)
 
         # Return the trained parameterization
