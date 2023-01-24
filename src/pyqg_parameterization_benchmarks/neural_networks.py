@@ -36,17 +36,18 @@ class FullyCNN(nn.Sequential):
         kw = {}
         if padding == "circular":
             kw["padding_mode"] = "circular"
-        block1 = self._make_subblock(nn.Conv2d(n_in, 128, 5, padding=padding_5, **kw))
-        block2 = self._make_subblock(nn.Conv2d(128, 64, 5, padding=padding_5, **kw))
-        block3 = self._make_subblock(nn.Conv2d(64, 32, 3, padding=padding_3, **kw))
-        block4 = self._make_subblock(nn.Conv2d(32, 32, 3, padding=padding_3, **kw))
-        block5 = self._make_subblock(nn.Conv2d(32, 32, 3, padding=padding_3, **kw))
-        block6 = self._make_subblock(nn.Conv2d(32, 32, 3, padding=padding_3, **kw))
-        block7 = self._make_subblock(nn.Conv2d(32, 32, 3, padding=padding_3, **kw))
-        conv8 = nn.Conv2d(32, n_out, 3, padding=padding_3)
+
         super().__init__(
-            *block1, *block2, *block3, *block4, *block5, *block6, *block7, conv8
+            *self._make_subblock(nn.Conv2d(n_in, 128, 5, padding=padding_5, **kw)),
+            *self._make_subblock(nn.Conv2d(128, 64, 5, padding=padding_5, **kw)),
+            *self._make_subblock(nn.Conv2d(64, 32, 3, padding=padding_3, **kw)),
+            *self._make_subblock(nn.Conv2d(32, 32, 3, padding=padding_3, **kw)),
+            *self._make_subblock(nn.Conv2d(32, 32, 3, padding=padding_3, **kw)),
+            *self._make_subblock(nn.Conv2d(32, 32, 3, padding=padding_3, **kw)),
+            *self._make_subblock(nn.Conv2d(32, 32, 3, padding=padding_3, **kw)),
+            *nn.Conv2d(32, n_out, 3, padding=padding_3),
         )
+
         self.is_zero_mean = zero_mean
 
     def forward(self, x):
