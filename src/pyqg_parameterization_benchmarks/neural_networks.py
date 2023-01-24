@@ -7,7 +7,15 @@ import pickle
 
 import pyqg
 import torch
-from torch import Tensor
+from torch import (  # pylint: disable=no-name-in-module
+    as_tensor,
+    tensor,
+    cuda,
+    Tensor,
+    save,
+    load,
+    no_grad,
+)
 from torch.nn import Sequential, Conv2d, BatchNorm2d, ReLU, MSELoss
 from torch import optim
 from torch.autograd import grad, Variable
@@ -119,6 +127,8 @@ class FullyCNN(Sequential):
         return out
 
     def extract_vars(self, m, features, dtype=np.float32):
+        """Do something."""
+        # TODO: Provide docstring and type-hints.
         ex = FeatureExtractor(m)
 
         arr = np.stack([np.take(ex(feat), z, axis=-3) for feat, z in features], axis=-3)
@@ -128,21 +138,27 @@ class FullyCNN(Sequential):
         return arr
 
     def extract_inputs(self, m):
+        """Provide a docstring."""
+        # TODO: Provide a docstring and type-hinting to explain this function.
         return self.extract_vars(m, self.inputs)
 
     def extract_targets(self, m):
+        """Extract targets from ???."""
+        # TODO: Add docstring and type-hinting.
         return self.extract_vars(m, self.targets)
 
     def input_gradients(self, inputs, output_channel, j, i, device=None):
+        """Input the gradients to something."""
+        # TODO: Provide a docstring, types and maybe a 'Notes' section in doc.
         if device is None:
-            device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            device = torch.device("cuda:0" if cuda.is_available() else "cpu")
             self.to(device)
 
         X = self.input_scale.transform(self.extract_inputs(inputs))
 
         grads = []
-        for (x_,) in minibatch(X, shuffle=False, as_tensor=False):
-            x = Variable(torch.tensor(x_), requires_grad=True).to(device)
+        for (x_,) in minibatch(X, shuffle=False, return_tensor=False):
+            x = Variable(tensor(x_), requires_grad=True).to(device)
             y = self.forward(x)[:, output_channel, j, i]
             grads.append(grad(y.sum(), x)[0].cpu().numpy())
 
@@ -159,9 +175,13 @@ class FullyCNN(Sequential):
         else:
             return grads
 
+    # TODO: Confirm it's okay to decorate this full function with no_grad()
+    @no_grad()
     def predict(self, inputs, device=None):
+        """Predict using inputs?."""
+        # TODO: Should we say `self.eval()` here to be careful?
         if device is None:
-            device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            device = torch.device("cuda:0" if cuda.is_available() else "cpu")
             self.to(device)
 
         X = self.input_scale.transform(self.extract_inputs(inputs))
@@ -169,11 +189,11 @@ class FullyCNN(Sequential):
         preds = []
         for (x,) in minibatch(X, shuffle=False):
             x = x.to(device)
-            with torch.no_grad():
-                preds.append(self.forward(x).cpu().numpy())
+            preds.append(self.forward(x).cpu().numpy())
 
         preds = self.output_scale.inverse_transform(np.vstack(preds))
 
+        # TODO: What is ``s``? Use pythonic variable name.
         s = list(inputs.q.shape)
         preds = np.stack(
             [preds[:, i].reshape(s[:-3] + s[-2:]) for i in range(len(self.targets))],
@@ -182,15 +202,21 @@ class FullyCNN(Sequential):
 
         try:
             return preds.astype(inputs.q.dtype)
+        # TODO What sort of exception are you expecting here?
         except:
             return preds
 
     def mse(self, inputs, targets):
+        """Return the mean-squared-error between ``inputs`` and ``targets``."""
+        # TODO: Update docstring and type hint.
+        # TODO: Do we need to re-implement this when PyTorch has done it?
         y_true = targets.reshape(-1, np.prod(targets.shape[1:]))
         y_pred = self.predict(inputs).reshape(-1, np.prod(targets.shape[1:]))
         return np.mean(np.sum((y_pred - y_true) ** 2, axis=1))
 
     def fit(self, inputs, targets, rescale=False, **kw):
+        """Fit the model using ``inputs`` and ``targets``."""
+        # TODO: Give more comprehensive docstrings and explanations of types.
         if rescale or not hasattr(self, "input_scale") or self.input_scale is None:
             self.input_scale = ChannelwiseScaler(inputs)
         if rescale or not hasattr(self, "output_scale") or self.output_scale is None:
@@ -204,9 +230,9 @@ class FullyCNN(Sequential):
 
     def save(self, path):
         os.system(f"mkdir -p {path}")
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:0" if cuda.is_available() else "cpu")
         self.cpu()
-        torch.save(self.state_dict(), f"{path}/weights.pt")
+        save(self.state_dict(), f"{path}/weights.pt")
         self.to(device)
         if hasattr(self, "input_scale") and self.input_scale is not None:
             with open(f"{path}/input_scale.pkl", "wb") as f:
@@ -236,7 +262,7 @@ class FullyCNN(Sequential):
             with open(f"{path}/padding", "r") as f:
                 kw["padding"] = f.read().strip()
         model = cls(inputs, targets, **kw)
-        model.load_state_dict(torch.load(f"{path}/weights.pt"))
+        model.load_state_dict(load(f"{path}/weights.pt"))
         if os.path.exists(f"{path}/input_scale.pkl"):
             with open(f"{path}/input_scale.pkl", "rb") as f:
                 model.input_scale = pickle.load(f)
@@ -287,6 +313,15 @@ class ConvBlock(Sequential):
 
 
 class BasicScaler(object):
+    """Basic scaling class for setting mean zero and std dev to 1.
+
+    Parameters
+    ----------
+    mean : float
+        The
+
+    """
+
     def __init__(self, mean=0, std_dev=1):
         self.mean = mean
         self.std_dev = std_dev
@@ -299,6 +334,9 @@ class BasicScaler(object):
 
 
 class ChannelwiseScaler(BasicScaler):
+
+    # TODO: See ``torchvision.transforms.Normalize``.
+
     def __init__(self, x, zero_mean=False):
         assert len(x.shape) == 4
         if zero_mean:
@@ -313,13 +351,13 @@ class ChannelwiseScaler(BasicScaler):
         super().__init__(mean, std_dev)
 
 
-def minibatch(*arrays, batch_size=64, as_tensor=True, shuffle=True):
+def minibatch(*arrays, batch_size=64, return_tensor=True, shuffle=True):
     assert len(set([len(a) for a in arrays])) == 1
     order = np.arange(len(arrays[0]))
     if shuffle:
         np.random.shuffle(order)
     steps = int(np.ceil(len(arrays[0]) / batch_size))
-    xform = torch.as_tensor if as_tensor else lambda x: x
+    xform = as_tensor if return_tensor else lambda x: x
     for step in range(steps):
         idx = order[step * batch_size : (step + 1) * batch_size]
         yield tuple(xform(array[idx]) for array in arrays)
@@ -329,7 +367,7 @@ def train(
     net, inputs, targets, num_epochs=50, batch_size=64, learning_rate=0.001, device=None
 ):
     if device is None:
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        device = device("cuda:0" if cuda.is_available() else "cpu")
         net.to(device)
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
     scheduler = optim.lr_scheduler.MultiStepLR(
@@ -374,11 +412,13 @@ class FCNNParameterization(Parameterization):
     def targets(self):
         targets = set()
         for model in self.models:
-            for target, z in model.targets:
+            for target, _ in model.targets:
                 targets.add(target)
         return list(sorted(list(targets)))
 
     def predict(self, m):
+        """Predict ?."""
+        # TODO: Provide docstring, type-hints and explanation.
         preds = {}
 
         for model in self.models:
@@ -411,6 +451,8 @@ class FCNNParameterization(Parameterization):
         padding="circular",
         **kw,
     ):
+        """Provide doctring with explanation of this function."""
+        # TODO: Provide docstring and type-hints.
 
         layers = range(len(dataset.lev))
 
