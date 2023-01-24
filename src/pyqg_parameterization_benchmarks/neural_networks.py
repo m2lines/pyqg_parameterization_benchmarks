@@ -18,6 +18,7 @@ class FullyCNN(nn.Sequential):
     dealing with constraints and scaling."""
 
     def __init__(self, inputs, targets, padding="circular", zero_mean=True):
+        """Build ``FullyCNN``."""
         if padding is None:
             padding_5 = 0
             padding_3 = 0
