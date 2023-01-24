@@ -1,4 +1,5 @@
 """Module containing neural networks."""
+from typing import List
 import os
 import glob
 import pickle
@@ -57,7 +58,22 @@ class FullyCNN(nn.Sequential):
         else:
             return r
 
-    def _make_subblock(self, conv):
+    def _make_subblock(self, conv: nn.Conv2d) -> List[nn.Module]:
+        """Create a two-dimensional convolutional subblock.
+
+        Conv2d -> ReLU -> BatchNorm2d
+
+        Parameters
+        ----------
+        conv : Conv2d
+            Instance of two-dimensional convolutional layer.
+
+        Returns
+        -------
+        List[Module]
+            A list of the layers in the subblock.
+
+        """
         return [conv, nn.ReLU(), nn.BatchNorm2d(conv.out_channels)]
 
     def extract_vars(self, m, features, dtype=np.float32):
