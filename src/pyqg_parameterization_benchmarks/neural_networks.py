@@ -1,4 +1,5 @@
 """Module containing neural networks."""
+from typing import Dict, Tuple, Any
 import os
 import glob
 import pickle
@@ -34,36 +35,58 @@ class FullyCNN(Sequential):
 
     def __init__(self, inputs, targets, padding="circular", zero_mean=True):
         """Build ``FullyCNN``."""
-        if padding is None:
-            padding_5 = 0
-            padding_3 = 0
-        elif padding in ["same", "circular"]:
-            padding_5 = 2
-            padding_3 = 1
-        else:
-            raise ValueError("Unknow value for padding parameter.")
         self.padding = padding
+        self.is_zero_mean = zero_mean
+
+        padding_3, padding_5 = self._process_padding()
+
         self.inputs = inputs
         self.targets = targets
         n_in = len(inputs)
         n_out = len(targets)
         self.n_in = n_in
-        kw = {}
-        if padding == "circular":
-            kw["padding_mode"] = "circular"
+
+        kwargs = {"padding_mode": "circular"} if padding == "circular" else {}
 
         super().__init__(
-            self._make_subblock(Conv2d(n_in, 128, 5, padding=padding_5, **kw)),
-            self._make_subblock(Conv2d(128, 64, 5, padding=padding_5, **kw)),
-            self._make_subblock(Conv2d(64, 32, 3, padding=padding_3, **kw)),
-            self._make_subblock(Conv2d(32, 32, 3, padding=padding_3, **kw)),
-            self._make_subblock(Conv2d(32, 32, 3, padding=padding_3, **kw)),
-            self._make_subblock(Conv2d(32, 32, 3, padding=padding_3, **kw)),
-            self._make_subblock(Conv2d(32, 32, 3, padding=padding_3, **kw)),
+            ConvBlock(n_in, 128, 5, padding_5, **kwargs),
+            ConvBlock(128, 64, 5, pad=padding_5, **kwargs),
+            ConvBlock(64, 32, 3, pad=padding_3, **kwargs),
+            ConvBlock(32, 32, 3, pad=padding_3, **kwargs),
+            ConvBlock(32, 32, 3, pad=padding_3, **kwargs),
+            ConvBlock(32, 32, 3, pad=padding_3, **kwargs),
+            ConvBlock(32, 32, 3, pad=padding_3, **kwargs),
             Conv2d(32, n_out, 3, padding=padding_3),
         )
 
-        self.is_zero_mean = zero_mean
+    def _process_padding(self) -> Tuple[int, int]:
+        """Process the ``padding`` argument.
+
+        Returns
+        -------
+        padding_3 : int
+            The padding to use in a ``Conv2d`` if the kernel size is 3.
+        padding_5 : int
+            The padding to use in a ``Conv2d`` if the kernel size is 5.
+
+        Raises
+        ------
+        ValueError
+            If padding is not ``None``, ``"same"`` or ``circular``.
+
+        """
+        if self.padding is None:
+            padding_5 = 0
+            padding_3 = 0
+        elif self.padding in ["same", "circular"]:
+            padding_5 = 2
+            padding_3 = 1
+        else:
+            msg = f"Unknown value for padding parameter. Choose from {None} "
+            msg += f"{'circular'} or {'same'}."
+            raise ValueError(msg)
+
+        return padding_3, padding_5
 
     def forward(self, x):
         r = super().forward(x)
@@ -71,25 +94,6 @@ class FullyCNN(Sequential):
             return r - r.mean(dim=(1, 2, 3), keepdim=True)
 
         return r
-
-    def _make_subblock(self, conv: Conv2d) -> Sequential:
-        """Create a two-dimensional convolutional subblock.
-
-        ``Conv2d`` -> ``ReLU`` -> ``BatchNorm2d``
-
-        Parameters
-        ----------
-        conv : Conv2d
-            Instance of two-dimensional convolutional layer.
-
-        Returns
-        -------
-        List[Module]
-            A list of the layers in the subblock:
-            ``Conv2d`` -> ``ReLU`` -> ``BatchNorm2d``.
-
-        """
-        return Sequential(conv, ReLU(), BatchNorm2d(conv.out_channels))
 
     def extract_vars(self, m, features, dtype=np.float32):
         ex = FeatureExtractor(m)
@@ -221,6 +225,42 @@ class FullyCNN(Sequential):
         if set_eval:
             model.eval()
         return model
+
+
+class ConvBlock(Sequential):
+    """Two-dimensional convolutional subblock.
+
+    ``Conv2d`` -> ``ReLU`` -> ``BatchNorm2d``
+
+    Parameters
+    ----------
+    in_chans : int
+        The number of inputs channels the block should expect.
+    out_chans : int
+        The number of output channels the block should produce.
+    kernel_size : int
+        The size of the kernel to use in the ``Conv2d`` layer.
+    pad : int
+        The padding argument for the ``Conv2d``.
+    **conv_keyword_args : Dict[str, Any]
+        Keyword arguments for the ``Conv2d``.
+
+    """
+
+    def __init__(
+        self,
+        in_chans: int,
+        out_chans: int,
+        kernel_size: int,
+        pad: int,
+        **conv_kwargs,
+    ):
+        """Build ``_ConBlock``."""
+        super().__init__(
+            Conv2d(in_chans, out_chans, kernel_size, padding=pad, **conv_kwargs),
+            ReLU(),
+            BatchNorm2d(out_chans),
+        )
 
 
 class BasicScaler(object):
