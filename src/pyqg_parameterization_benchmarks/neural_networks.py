@@ -191,15 +191,15 @@ class FullyCNN(nn.Sequential):
 
 
 class BasicScaler(object):
-    def __init__(self, mu=0, sd=1):
-        self.mu = mu
-        self.sd = sd
+    def __init__(self, mean=0, std_dev=1):
+        self.mean = mean
+        self.std_dev = std_dev
 
     def transform(self, x):
-        return (x - self.mu) / self.sd
+        return (x - self.mean) / self.std_dev
 
     def inverse_transform(self, z):
-        return z * self.sd + self.mu
+        return z * self.std_dev + self.mean
 
 
 class ChannelwiseScaler(BasicScaler):
