@@ -218,8 +218,10 @@ class FullyCNN(Sequential):
         """Fit the model using ``inputs`` and ``targets``."""
         # TODO: Give more comprehensive docstrings and explanations of types.
         if rescale or not hasattr(self, "input_scale") or self.input_scale is None:
+            # TODO: Attributes should not be set in this way outside the init.
             self.input_scale = ChannelwiseScaler(inputs)
         if rescale or not hasattr(self, "output_scale") or self.output_scale is None:
+            # TODO: Attributes should not be set in this way outside the init.
             self.output_scale = ChannelwiseScaler(targets, zero_mean=self.is_zero_mean)
         train(
             self,
@@ -229,6 +231,9 @@ class FullyCNN(Sequential):
         )
 
     def save(self, path):
+        """Add a docstring explaining what's going here."""
+        # TODO: Make it clear what we are saving here.
+        # TODO: Consider using the glorious pathlib library.
         os.system(f"mkdir -p {path}")
         device = torch.device("cuda:0" if cuda.is_available() else "cpu")
         self.cpu()
@@ -252,6 +257,9 @@ class FullyCNN(Sequential):
 
     @classmethod
     def load(cls, path, set_eval=True, **kwargs):
+        """Add a docstring explaining what's going on here."""
+        # TODO: Add docstring and type-hinting.
+        # TODO: Don't use ``f`` as a variable name in context managers.
         with open(f"{path}/inputs.pkl", "rb") as f:
             inputs = pickle.load(f)
         with open(f"{path}/targets.pkl", "rb") as f:
@@ -315,29 +323,49 @@ class ConvBlock(Sequential):
 class BasicScaler(object):
     """Basic scaling class for setting mean zero and std dev to 1.
 
+    #TODO: Is this transformation to be applied to mini-batches using stats
+    obtained over the dataset as a whole? If so, I'd modify the description.
+
+    #TODO: Make it clear in the docstring how this is distinct from channel-
+    wise rescaling.
+
     Parameters
     ----------
     mean : float
-        The
+        The mean to subtract from inputs.
+    std_dev : float
+        The standard deviation to divide inputs by.
 
     """
 
+    # TODO: Add type-hinting for this class.
+
     def __init__(self, mean=0, std_dev=1):
+        """Construct ``BasicScaler``."""
         self.mean = mean
         self.std_dev = std_dev
 
     def transform(self, x):
+        """Rescale ``x``."""
+        # TODO: Update the docstring with descriptive variable names
         return (x - self.mean) / self.std_dev
 
     def inverse_transform(self, z):
+        """Invert the basic rescaling transform."""
+        # TODO: Update the docstring with descriptive variable names
         return z * self.std_dev + self.mean
 
 
 class ChannelwiseScaler(BasicScaler):
+    """Add a docstring with parameters and explanation."""
 
+    # TODO: Add dosctring and type-hints.
     # TODO: See ``torchvision.transforms.Normalize``.
 
     def __init__(self, x, zero_mean=False):
+        """Construct ``ChannelwiseScaler``."""
+
+        # TODO: Expand on description of what's going on here in docstring.
         assert len(x.shape) == 4
         if zero_mean:
             mean = 0
@@ -352,6 +380,8 @@ class ChannelwiseScaler(BasicScaler):
 
 
 def minibatch(*arrays, batch_size=64, return_tensor=True, shuffle=True):
+    """Add a docstring explaining what is going on here."""
+    # TODO: Update docstring, explain what's going on and add type-hinting.
     assert len(set([len(a) for a in arrays])) == 1
     order = np.arange(len(arrays[0]))
     if shuffle:
@@ -364,8 +394,16 @@ def minibatch(*arrays, batch_size=64, return_tensor=True, shuffle=True):
 
 
 def train(
-    net, inputs, targets, num_epochs=50, batch_size=64, learning_rate=0.001, device=None
+    net,
+    inputs,
+    targets,
+    num_epochs=50,
+    batch_size=64,
+    learning_rate=0.001,
+    device=None,
 ):
+    """Add a descriptive docstring."""
+    # TODO: Add a descriptive docstring and type-hints.
     if device is None:
         device = device("cuda:0" if cuda.is_available() else "cpu")
         net.to(device)
@@ -383,10 +421,10 @@ def train(
     for epoch in range(num_epochs):
         epoch_loss = 0.0
         epoch_steps = 0
-        for x, y in minibatch(inputs, targets, batch_size=batch_size):
+        for batch, target in minibatch(inputs, targets, batch_size=batch_size):
             optimizer.zero_grad()
-            yhat = net.forward(x.to(device))
-            ytrue = y.to(device)
+            yhat = net.forward(batch.to(device))
+            ytrue = target.to(device)
             loss = criterion(yhat, ytrue)
             loss.backward()
             optimizer.step()
@@ -397,7 +435,11 @@ def train(
 
 
 class FCNNParameterization(Parameterization):
+    """Add docstring explaining what this class is and does."""
+
+    # TODO: Update dosctring and type-hints. Make it clear what this class does.
     def __init__(self, directory, models=None, **kw):
+        """Construct ``FCNNParameterization``."""
         self.directory = directory
         self.models = (
             models
@@ -410,6 +452,8 @@ class FCNNParameterization(Parameterization):
 
     @property
     def targets(self):
+        """What do?."""
+        # TODO: Add a docstring and explain what we are doing here.
         targets = set()
         for model in self.models:
             for target, _ in model.targets:
@@ -428,6 +472,7 @@ class FCNNParameterization(Parameterization):
             # possible input shapes (e.g. pyqg.Model or xr.Dataset snapshot
             # stack)
             for channel in range(pred.shape[-3]):
+                # TODO: What is z? Please use a descriptive name.
                 target, z = model.targets[channel]
                 if target not in preds:
                     preds[target] = np.zeros_like(m.q)
@@ -444,8 +489,8 @@ class FCNNParameterization(Parameterization):
         cls,
         dataset,
         directory,
-        inputs=["q", "u", "v"],
-        targets=["q_subgrid_forcing"],
+        inputs=None,
+        targets=None,
         num_epochs=50,
         zero_mean=True,
         padding="circular",
@@ -453,6 +498,9 @@ class FCNNParameterization(Parameterization):
     ):
         """Provide doctring with explanation of this function."""
         # TODO: Provide docstring and type-hints.
+
+        inputs = inputs if inputs is not None else ["q", "u", "v"]
+        targets = targets if targets is not None else ["q_subgrid_forcing"]
 
         layers = range(len(dataset.lev))
 
