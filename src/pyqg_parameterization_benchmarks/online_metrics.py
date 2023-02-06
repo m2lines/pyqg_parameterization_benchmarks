@@ -5,13 +5,33 @@ from scipy.stats import wasserstein_distance
 from pyqg_parameterization_benchmarks.utils import FeatureExtractor
 
 
+# TODO: Add type-hints; correct docstring; use pythonic variable names
 def diagnostic_differences(ds1, ds2, T=10):
-    """Compute distributional and spectral differences between two
+    """One-line python summary docstring.
+
+
+    Compute distributional and spectral differences between two
     xarray.Dataset objects representing ensembles of pyqg simulations.
     Variable shape should be (time, lev, y, x) with an optional leading
     "run" dimension.
 
-    NOTE: this method is similar to
+    Parameters
+    ----------
+    ds1 : ???
+        What is this quantity?
+    ds2 : ???
+        What is this quantity?
+    T : int(???)
+        What is this quantity?
+
+    Returns
+    -------
+    differences : Dict[str, ???]
+        What be differences?
+
+    Notes
+    -----
+    This method is similar to
     https://pyqg.readthedocs.io/en/latest/api.html#pyqg.diagnostic_tools.diagnostic_differences,
     but includes distributional metrics and has been adapted to work with
     xarray.Dataset objects."""
@@ -52,9 +72,11 @@ def diagnostic_differences(ds1, ds2, T=10):
             # Compute the empirical wasserstein distance
             differences[f"distrib_diff_{label}{z+1}"] = wasserstein_distance(q1, q2)
 
+    # TODO: Does this function belong inside here (too-many-locals as is).
     def twothirds_nyquist(m):
         return m.k[0][np.argwhere(np.array(m.filtr)[0] < 1)[0, 0]]
 
+    # TODO: Does this function belong inside here (too-many-locals as is).
     def spectral_rmse(spec1, spec2):
         # Initialize pyqg models so we can use pyqg's calc_ispec helper
         m1 = pyqg.QGModel(nx=spec1.data.shape[-2], log_level=0)
@@ -86,15 +108,33 @@ def diagnostic_differences(ds1, ds2, T=10):
     return differences
 
 
-def diagnostic_similarities(model, target, baseline, **kw):
-    """Like `diagnostic_differences`, but returning a dictionary of similarity
+# TODO: Fix docstring and add type-hinting.
+def diagnostic_similarities(model, target, baseline, **kwargs):
+    """One-line summary docstring.
+
+    Like `diagnostic_differences`, but returning a dictionary of similarity
     scores between negative infinity and 1 which quantify how much closer the
     diagnostics of a given `model` are to a `target` with respect to a
     `baseline`. Scores approach 1 when the distance between the model and the
     target is small compared to the baseline and are negative when that
     distance is greater.
+
+    Parameters
+    ----------
+    model : ???
+        Is this a neural network model?
+    target : ???
+        A ground truth Tensor?
+    baseline : ???
+        What is this quantity?
+
+    Returns
+    -------
+    sims : Dict[str, ???]
+        ?
+
     """
-    d1 = diagnostic_differences(model, target, **kw)
-    d2 = diagnostic_differences(baseline, target, **kw)
+    d1 = diagnostic_differences(model, target, **kwargs)
+    d2 = diagnostic_differences(baseline, target, **kwargs)
     sims = dict((k, 1 - d1[k] / d2[k]) for k in d1.keys())
     return sims
