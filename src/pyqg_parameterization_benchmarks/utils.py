@@ -22,7 +22,7 @@ class Parameterization(pyqg.Parameterization):
         """Add docstring and type-hinting."""
         raise NotImplementedError
 
-    # TODO: Add a docstring and stype-hinting (what does this return?).
+    # TODO: Add a docstring and type-hinting (what does this return?).
     def predict(self):
         """Add docstring and type-hinting."""
         raise NotImplementedError
@@ -113,7 +113,8 @@ class Parameterization(pyqg.Parameterization):
         Parameters
         ----------
         sampling_freq : int
-            Should this always be an integer. Is the unit hours?
+            Should this always be an integer. Is the unit hours? Is it a
+            frequency or a time?
 
         Returns
         -------
@@ -213,11 +214,36 @@ class Parameterization(pyqg.Parameterization):
         return test
 
 
+# TODO: Fix docstring.
 class FeatureExtractor:
-    """Helper class for taking spatial derivatives and translating string
+    """One-line class summary.
+
+    Parameters
+    ----------
+    model_or_dataset : ?
+        Should this be two seperate, optional, parameters?
+
+
+    Helper class for taking spatial derivatives and translating string
     expressions into data. Works with either pyqg.Model or xarray.Dataset."""
 
+    # TODO: Review docstring.
     def __call__(self, feature_or_features, flat=False):
+        """One-line summary of what this function does.
+
+        Parameters
+        ----------
+        feature_or_features : ???
+            Is this really a good variable name?
+        flat : bool, optional
+            What does this do/mean?
+
+        Returns
+        -------
+        res : ???
+            Change variable name and explain what it is.
+
+        """
         arr = lambda x: x.data if isinstance(x, xr.DataArray) else x
         if isinstance(feature_or_features, str):
             res = arr(self.extract_feature(feature_or_features))
@@ -230,7 +256,9 @@ class FeatureExtractor:
                 res = res.reshape(len(feature_or_features), -1).T
         return res
 
+    # TODO: Change to meaningfull pythonic variable names.
     def __init__(self, model_or_dataset):
+        """Build ``FeatureExtractor``."""
         self.m = model_or_dataset
         self.cache = {}
 
@@ -248,6 +276,7 @@ class FeatureExtractor:
         self.wv2 = self.ik**2 + self.il**2
 
     # Helpers for taking FFTs / deciding if we need to
+    # TODO: Document functions
     def fft(self, x):
         try:
             return self.m.fft(x)
@@ -259,15 +288,18 @@ class FeatureExtractor:
                 np.fft.rfftn(x, axes=(-2, -1)), dims=dims, coords=coords
             )
 
+    # TODO: Document functions
     def ifft(self, x):
         try:
             return self.m.ifft(x)
         except:
             return self["q"] * 0 + np.fft.irfftn(x, axes=(-2, -1))
 
+    # TODO: Document functions
     def is_real(self, arr):
         return len(set(arr.shape[-2:])) == 1
 
+    # TODO: Document functions
     def real(self, arr):
         arr = self[arr]
         if isinstance(arr, float):
@@ -276,6 +308,7 @@ class FeatureExtractor:
             return arr
         return self.ifft(arr)
 
+    # TODO: Document function
     def compl(self, arr):
         arr = self[arr]
         if isinstance(arr, float):
@@ -284,50 +317,76 @@ class FeatureExtractor:
             return self.fft(arr)
         return arr
 
+    # TODO: Document function
     # Spectral derivatrives
     def ddxh(self, f):
         return self.ik * self.compl(f)
 
+    # TODO: Document function
     def ddyh(self, f):
         return self.il * self.compl(f)
 
+    # TODO: Document function
     def divh(self, x, y):
         return self.ddxh(x) + self.ddyh(y)
 
+    # TODO: Document function
     def curlh(self, x, y):
         return self.ddxh(y) - self.ddyh(x)
 
+    # TODO: Document function
     def laplacianh(self, x):
         return self.wv2 * self.compl(x)
 
+    # TODO: Document function
     def advectedh(self, x_):
         x = self.real(x_)
         return self.ddxh(x * self.m.ufull) + self.ddyh(x * self.m.vfull)
 
+    # TODO: Document function
     # Real counterparts
     def ddx(self, f):
         return self.real(self.ddxh(f))
 
+    # TODO: Document function
     def ddy(self, f):
         return self.real(self.ddyh(f))
 
+    # TODO: Document function
     def laplacian(self, x):
         return self.real(self.laplacianh(x))
 
+    # TODO: Document function
     def advected(self, x):
         return self.real(self.advectedh(x))
 
+    # TODO: Document function
     def curl(self, x, y):
         return self.real(self.curlh(x, y))
 
+    # TODO: Document function
     def div(self, x, y):
         return self.real(self.divh(x, y))
 
+    # TODO: Review docstring; type-hint.
     # Main function: interpreting a string as a feature
     def extract_feature(self, feature):
-        """Evaluate a string feature, e.g. laplacian(advected(curl(u,v)))."""
+        """Evaluate a string feature, e.g. laplacian(advected(curl(u,v))).
+
+        Parameters
+        ----------
+        feature : ???
+            Presumably this is a string giving operations. Add documentation
+            about how it should be formatted.
+
+        Returns
+        -------
+        ???
+
+        """
 
         # Helper to recurse on each side of an arity-2 expression
+        # TODO: Can we discuss what this function does and how to refactor it?
         def extract_pair(s):
             depth = 0
             for i, char in enumerate(s):
@@ -373,11 +432,26 @@ class FeatureExtractor:
 
         return self[feature]
 
+    # TODO: Document and type-hint.
     def extracted(self, key):
+        """One-line summary docstring.
+
+        Parameters
+        ----------
+        key : ?
+            A key of some kind?
+
+        Returns
+        -------
+        ?
+
+        """
         return key in self.cache or hasattr(self.m, key)
 
+    # TODO: Review the hackery; add docstring and type-hints; refactor.
     # A bit of additional hackery to allow for the reading of features or properties
     def __getitem__(self, q):
+        """One-line summery of the so-called 'hackery'."""
         if isinstance(q, str):
             if q in self.cache:
                 return self.cache[q]
@@ -393,14 +467,45 @@ class FeatureExtractor:
             raise KeyError(q)
 
 
+# TODO: Add docstring and type-hints.
 def energy_budget_term(model, term):
+    """One-line summary of docstring.
+
+    Parameters
+    ----------
+    model : ???
+        Is this a PyTorch model (``torch.nn.Module``).
+    term : ???
+        Description here.
+
+    Returns
+    -------
+    ???
+
+    """
     val = model[term]
     if "paramspec_" + term in model:
         val += model["paramspec_" + term]
     return val.sum("l")
 
 
+# TODO: Add docstring and type-hints.
 def energy_budget_figure(models, skip=0):
+    """One-line summary.
+
+    Parameters
+    ----------
+    models : ???
+        ?
+    skip : int, optional
+        ?
+
+    Returns
+    -------
+    fig : plt.Figure
+        Matplotlib figure object.
+
+    """
     import matplotlib.pyplot as plt
 
     fig = plt.figure(figsize=(12, 5))
