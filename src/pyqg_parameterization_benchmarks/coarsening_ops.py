@@ -5,19 +5,19 @@ from functools import cached_property
 # TODO: Add type-hinting and proper variable name for ``m``.
 # TODO: Complete docstring.
 def config_for(m):
-    """Return parameters needed to initialize new pyqg.QGModel.
-
-    Does not return the ``nx`` and ``ny`` parameters. What are these
-    parameters?
+    """Return all parameters needed to initialize a new pyqg.QGModel similar to
+    an existing model, except for ``nx`` and ``ny``, so that the new model can
+    be given a different resolution.
 
     Parameters
     ----------
-    m : ???
+    m : pyqg.QGModel
+        The existing model whose configuration parameters we wish to extract
 
     Returns
     -------
-    config : Dict[str, ???]
-        A dictionary holding the parameters???
+    config : Dict[str, Any]
+        A dictionary holding the configuration parameters
 
     """
     # """Return the parameters needed to initialize a new
@@ -33,10 +33,11 @@ class Coarsener:
 
     Parameters
     ----------
-    high_res_model : ???
-        Description of ``high_res_model``.
-    low_res_nx : ???
-        Description of ``low_res_nx``.
+    high_res_model : pyqg.QGModel
+        A quasigeostrophic model.
+    low_res_nx : int
+        A new resolution for the model. Must be lower than
+        ``high_res_model.nx`` and evenly divisible by 2.
 
     """
 
@@ -55,7 +56,9 @@ class Coarsener:
     # TODO: Use pythonic variable names.
     @property
     def q_forcing_total(self):
-        """Add a docstring."""
+        """Return the "total" subgrid forcing of the potential vorticity as the
+        difference between PV tendencies when passing high-res and coarsened
+        initial conditions through high-res and low-res models, respectively"""
         for m in [self.m1, self.m2]:
             m._invert()
             m._do_advection()
@@ -68,13 +71,13 @@ class Coarsener:
 
         Parameters
         ----------
-        var: ???
-            What is ``var``?
+        var: np.ndarray
+            Real or complex array variable.
 
         Returns
         -------
-        float
-            Is this surely a float?
+        np.ndarray
+            The array variable converted to real space.
 
         """
         for m in [self.m1, self.m2]:
@@ -88,13 +91,13 @@ class Coarsener:
 
         Parameters
         ----------
-        var : ???
-            Add description.
+        var: np.ndarray
+            Real or complex array variable.
 
         Returns
         -------
-        float : ???
-            Is this a float?
+        np.ndarray
+            The array variable converted to spectral space.
 
         """
         for m in [self.m1, self.m2]:
@@ -108,12 +111,15 @@ class Coarsener:
 
         Parameters
         ----------
-        var : ???
-            What is ``var``?
+        var : str
+            A string representing a variable, which must be an attribute of a
+            pyqg.QGModel.
 
         Returns
         -------
-        ???
+        np.ndarray
+            The subgrid forcing of that variable as the difference between the
+            coarsened advected quantity and the advected coarsened quantity.
 
         """
         q1 = getattr(self.m1, var)
@@ -128,13 +134,16 @@ class Coarsener:
 
         Parameters
         ----------
-        var : ???
-            What is ``var``.
+        var : str
+            A string representing a variable, which must be an attribute of a
+            pyqg.QGModel.
 
         Returns
         -------
-        Tuple[???, ???]
-            ???
+        Tuple[np.ndarray, np.ndarray]
+            A tuple of two arrays representing the subgrid fluxes of the
+            variable in the x- and y-directions. The divergence of these fluxes
+            equals the ``subgrid_forcing``.
 
         """
         q1 = getattr(self.m1, var)
@@ -150,9 +159,7 @@ class Coarsener:
 
         Returns
         -------
-        ratio : ???
-            A ratio of ? to ?.
-
+        ratio : float
         """
         return self.m1.nx / self.m2.nx
 
@@ -162,8 +169,8 @@ class Coarsener:
 
         Parameters
         ----------
-        var : ???
-            Description of ``var``.
+        var : np.ndarray
+            An array representing a spatial field to filter and coarsen.
 
         """
         raise NotImplementedError()
@@ -175,8 +182,7 @@ class Coarsener:
 
         Returns
         -------
-        ???
-
+        xarray.Dataset
 
         """
         return self.m1.to_dataset()
