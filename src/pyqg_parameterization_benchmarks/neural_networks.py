@@ -3,8 +3,6 @@ from typing import Tuple
 import os
 import glob
 import pickle
-
-
 import pyqg
 import torch
 from torch import (  # pylint: disable=no-name-in-module
@@ -43,8 +41,6 @@ class FullyCNN(Sequential):
         after being passed through the ``forward`` method.
 
     """
-
-    # TODO: Supply types for ``inputs`` and ``targets`` in docstring.
 
     # TODO: Complete type-hinting in __init__ def.
     def __init__(
