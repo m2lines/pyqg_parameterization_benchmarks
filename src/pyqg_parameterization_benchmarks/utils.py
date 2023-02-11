@@ -8,118 +8,151 @@ import xarray as xr
 
 # TODO: Review class docstring and make conventional
 class Parameterization(pyqg.Parameterization):
-    """Add a one-line summary docstring.
+    """Helper class for defining parameterizations.
 
+    This extends the normal pyqg.Parameterization framework to handle
+    prediction of either subgrid forcings or fluxes, as well as to apply to
+    either pyqg.QGModel instances or xarray.Datasets of multiple model runs."""
 
-    Helper class for defining parameterizations. This extends the normal
-    pyqg parameterization framework to handle prediction of either subgrid
-    forcings or fluxes, as well as to apply to either pyqg.Models or
-    xarray.Datasets."""
-
-    # TODO: Add docstring and type-hints
     @property
     def targets(self):
-        """Add docstring and type-hinting."""
+        """List of names of quantities the parameterization predicts.
+
+        Returns
+        -------
+        List[str]
+            List of parameterization targets returned by this parameterization.
+            Valid options are "q_forcing_total", "q_subgrid_forcing",
+            "u_subgrid_forcing", "v_subgrid_forcing", "uq_subgrid_flux",
+            "vq_subgrid_flux", "uu_subgrid_flux", "vv_subgrid_flux", and
+            "uv_subgrid_flux". See the dataset description notebook or the
+            paper for more details on the meanings of these target fields and
+            how they're used.
+
+        """
         raise NotImplementedError
 
-    # TODO: Add a docstring and type-hinting (what does this return?).
-    def predict(self):
-        """Add docstring and type-hinting."""
+    def predict(self, model):
+        """Subgrid forcing predictions, as a dictionary of target => array.
+
+        Parameters
+        ----------
+        model : Union[pyqg.QGModel, xarray.Dataset]
+            Model for which we are making subgrid forcing predictions.
+
+        Returns
+        -------
+        Dict[str, Union[numpy.ndarray, xarray.DataArray]]
+            Dictionary of target variable name to subgrid forcing predictions,
+            either as numpy arrays (if the model is a pyqg.QGModel) or as
+            xarray.DataArrays (if the model is an xarray.Dataset).
+
+        """
         raise NotImplementedError
 
-    # TODO: Docstring.
     @property
     def nx(self) -> int:
+        """Spatial resolution of the pyqg.QGModel to which this
+        parameterization applies.
+
+        Currently only supports 64 to replicate the paper, but could be easily
+        extended.
+
+        Returns
+        -------
+        int
+            Spatial resolution, i.e. pyqg.QGModel.nx
+
+        """
         return 64  # Future work should generalize this.
 
-    # TODO: Docstring
     @property
     def parameterization_type(self) -> str:
-        """Add one-line summary.
+        """Return whether this is a potential vorticity parameterization (i.e.
+        "q_parameterization") or velocity parameterization (i.e.
+        "uv_parameterization").
+
+        This is needed for pyqg to properly handle parameterizations
+        internally.
 
         Returns
         -------
         str
-            Meaning ...
+            Indication of whether the parameterization targets PV or velocity.
 
         """
         if any(q in self.targets[0] for q in ["q_forcing", "q_subgrid"]):
             return "q_parameterization"
         return "uv_parameterization"
 
-    # TODO: Update docstring; use pythonic variable names; add type-hints.
+    # TODO: use pythonic variable names
     def __call__(self, m):
-        """One-line summary.
+        """Invoke the parameterization in the format required by pyqg.
 
         Parameters
         ----------
-        m : ???
-            ``m``?
+        m : Union[pyqg.QGModel, xarray.Dataset]
+            Model or dataset.
 
         Returns
         -------
-        Tuple[?]
+        Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]
+           Either a single array (if ``parameterization_type`` is
+           ``q_parameterization``) or a tuple of two arrays (if
+           ``parameterization_type`` is ``uv_parameterization``) representing
+           the subgrid forcing, with each array having the same shape and data
+           type as the model's PV variable.
 
         """
 
-        # TODO: Update and review docstring; type-hint.
-        # TODO: Can we move this function outside of the call method?
-        def arr(x):
-            """One-line summary.
-
-            Parameters
-            ----------
-            x : ???
-                What is this parameter?
-
-            Notes
-            -----
-            Should there be some kinds of else condition, or type-checking?
-
-            """
-            if isinstance(x, xr.DataArray):
-                x = x.data
-            return x.astype(m.q.dtype)
-
+        ensure_array = lambda x: (x.data if isinstance(x, xr.DataArray) else x).astype(m.q.dtype)
         preds = self.predict(m)
-        keys = list(sorted(preds.keys()))
+        keys = list(sorted(preds.keys())) # these are the same as our targets
         assert keys == self.targets
+
+        # decide how to convert parameterization predictions to the right
+        # output format
         if len(keys) == 1:
-            return arr(preds[keys[0]])
+            # if there's only one target, it's a PV parameterization, and we can
+            # just return the array
+            return ensure_array(preds[keys[0]])
         elif keys == ["uq_subgrid_flux", "vq_subgrid_flux"]:
+            # these are PV subgrid fluxes; we need to take their divergence
             ex = FeatureExtractor(m)
-            return arr(
+            return ensure_array(
                 ex.ddx(preds["uq_subgrid_flux"]) + ex.ddy(preds["vq_subgrid_flux"])
             )
         elif "uu_subgrid_flux" in keys and len(keys) == 3:
+            # these are velocity subgrid fluxes; we need to take two sets of
+            # divergences and return a tuple
             ex = FeatureExtractor(m)
             return (
-                arr(
+                ensure_array(
                     ex.ddx(preds["uu_subgrid_flux"]) + ex.ddy(preds["uv_subgrid_flux"])
                 ),
-                arr(
+                ensure_array(
                     ex.ddx(preds["uv_subgrid_flux"]) + ex.ddy(preds["vv_subgrid_flux"])
                 ),
             )
         else:
-            return tuple(arr(preds[k]) for k in keys)
+            # this is a "simple" velocity parameterization; return a tuple
+            return tuple(ensure_array(preds[k]) for k in keys)
 
-    # TODO: Review docstring and type-hint.
     def run_online(self, sampling_freq=1000, **kwargs):
-        """Run a parameterized pyqg.QGModel, saving snapshots every 1000h.
-
-        Should the '1000h' be 'hard-coded' in the docstring?
+        """Initialize and run a parameterized pyqg.QGModel, saving snapshots
+        periodically.
 
         Parameters
         ----------
         sampling_freq : int
-            Should this always be an integer. Is the unit hours? Is it a
-            frequency or a time?
+            Number of timesteps (hours) between saving snapshots.
+        **kwargs : dict
+            Simulation parameters to pass to pyqg.QGModel.
 
         Returns
         -------
-        ds : ???
-            What type and meaning should this quanitity be ascribed?
+        ds : xarray.Dataset
+            Dataset of parameterized model run snapshots
 
         """
         # Initialize a pyqg model with this parameterization
@@ -150,23 +183,23 @@ class Parameterization(pyqg.Parameterization):
 
         return ds
 
-    # TODO: Review docstring and type-hint.
     def test_offline(self, dataset):
-        """One-line summary docstring.
+        """Evaluate offline performance of the parameterization on an existing
+        dataset.
 
         Parameters
         ----------
-        dataset : ???
-            Description.
+        dataset : xarray.Dataset
+            Dataset containing coarsened inputs and subgrid forcing variables
+            matching this parameterization's targets.
 
         Returns
         -------
-        test : ???
-            Dataset?
+        test : xarray.Dataset
+            Dataset of offline performance metrics specific to each predicted
+            target, along with the target values themselves (subselected from
+            the original dataset).
 
-
-        Evaluate the parameterization on an offline dataset,
-        computing a variety of metrics.
         """
 
         test = dataset[self.targets]
@@ -216,32 +249,52 @@ class Parameterization(pyqg.Parameterization):
 
 # TODO: Fix docstring.
 class FeatureExtractor:
-    """One-line class summary.
+    """Helper class for evaluating arbitrarily deep string expressions (e.g.
+    "laplacian(ddx(mul(u,q)))") on either pyqg.QGModel or xarray.Dataset
+    instances.
 
     Parameters
     ----------
-    model_or_dataset : ?
-        Should this be two seperate, optional, parameters?
+    model_or_dataset : Union[pyqg.QGModel, xarray.Dataset]
+        Model or dataset we'll be extracting features from.
 
+    """
 
-    Helper class for taking spatial derivatives and translating string
-    expressions into data. Works with either pyqg.Model or xarray.Dataset."""
+    def __init__(self, model_or_dataset):
+        """Build ``FeatureExtractor``."""
+        self.m = model_or_dataset
+        self.cache = {}
 
-    # TODO: Review docstring.
+        # Save variables that we'll need to deal with spatial fields
+        if hasattr(self.m, "_ik"):
+            self.ik, self.il = np.meshgrid(self.m._ik, self.m._il)
+        elif hasattr(self.m, "fft"):
+            self.ik = 1j * self.m.k
+            self.il = 1j * self.m.l
+        else:
+            k, l = np.meshgrid(self.m.k, self.m.l)
+            self.ik = 1j * k
+            self.il = 1j * l
+
+        self.nx = self.ik.shape[0]
+        self.wv2 = self.ik**2 + self.il**2
+
     def __call__(self, feature_or_features, flat=False):
-        """One-line summary of what this function does.
+        """Extract the given feature or features from the underlying dataset or
+        model, returning an array.
 
         Parameters
         ----------
-        feature_or_features : ???
-            Is this really a good variable name?
+        feature_or_features : Union[str, List[str]]
+            Either a single string expression or a list of string expressions.
         flat : bool, optional
-            What does this do/mean?
+            Whether to flatten the output of each feature to an array with only
+            one dimension (rather than a spatial field). Defaults to False.
 
         Returns
         -------
-        res : ???
-            Change variable name and explain what it is.
+        res : numpy.ndarray
+            Array of values of corresponding features.
 
         """
         arr = lambda x: x.data if isinstance(x, xr.DataArray) else x
@@ -255,25 +308,6 @@ class FeatureExtractor:
             if flat:
                 res = res.reshape(len(feature_or_features), -1).T
         return res
-
-    # TODO: Change to meaningfull pythonic variable names.
-    def __init__(self, model_or_dataset):
-        """Build ``FeatureExtractor``."""
-        self.m = model_or_dataset
-        self.cache = {}
-
-        if hasattr(self.m, "_ik"):
-            self.ik, self.il = np.meshgrid(self.m._ik, self.m._il)
-        elif hasattr(self.m, "fft"):
-            self.ik = 1j * self.m.k
-            self.il = 1j * self.m.l
-        else:
-            k, l = np.meshgrid(self.m.k, self.m.l)
-            self.ik = 1j * k
-            self.il = 1j * l
-
-        self.nx = self.ik.shape[0]
-        self.wv2 = self.ik**2 + self.il**2
 
     # Helpers for taking FFTs / deciding if we need to
     # TODO: Document functions
