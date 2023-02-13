@@ -33,7 +33,7 @@ jobs:
         conda env update --file requirements.conda.yaml --name base
 
 
-    - name: Install TorchTools
+    - name: Install packge
       if: always()
       run: |
         pip install -e .
