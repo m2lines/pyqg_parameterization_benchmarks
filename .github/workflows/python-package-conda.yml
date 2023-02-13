@@ -54,28 +54,28 @@ jobs:
     - name: Format with black
       if: always()
       run: |
-        black $(git ls-files torch_tools)
+        black $(git ls-files src)
 
 
     - name: Lint with Pylint
       if: always()
       run: |
-        pylint $(git ls-files torch_tools)
+        pylint $(git ls-files src)
 
 
     - name: Test with pytest
       if: always()
       run: |
-        pytest tests
+        pytest .
 
 
     - name: Lint with Mypy
       if: always()
       run: |
-        mypy $(git ls-files torch_tools)
+        mypy $(git ls-files src)
 
 
     - name: Lint with Pydocstyle
       if: always()
       run : |
-        pydocstyle $(git ls-files torch_tools) --convention=numpy
+        pydocstyle $(git ls-files src) --convention=numpy
