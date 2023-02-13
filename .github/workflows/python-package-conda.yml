@@ -3,42 +3,79 @@ name: Python Package using Conda
 on: [push]
 
 jobs:
-  build-macos:
-    runs-on: macos-latest
-    strategy:
-      max-parallel: 5
+  build:
 
+    strategy:
+      matrix:
+        python_version: ["3.8", "3.9", "3.10"]
+        os: ["ubuntu-latest", "macos-latest"]
+
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v3
+    - name: Set up Python
+      uses: actions/setup-python@v2
       with:
-        python-version: '3.10'
+        python-version: ${{ matrix.python_version }}
+
+
     - name: Add conda to system path
+      if: always()
       run: |
         # $CONDA is an environment variable pointing to the root of the miniconda directory
         echo $CONDA/bin >> $GITHUB_PATH
 
+
     - name: Install dependencies
+      if: always()
       run: |
         conda env update --file requirements.conda.yaml --name base
 
-    - name: Format with black
+
+    - name: Install TorchTools
+      if: always()
       run: |
-        black $(git ls-files '*.py')
+        pip install -e .
+
+
+    - name: Update conda packages
+      if: always()
+      run : |
+        conda update --all
+
+
+    - name: Clean conda junk
+      if: always()
+      run: |
+        yes | conda clean --all
+
+
+    - name: Format with black
+      if: always()
+      run: |
+        black $(git ls-files torch_tools)
+
 
     - name: Lint with Pylint
+      if: always()
       run: |
-        pylint $(git ls-files '*.py')
+        pylint $(git ls-files torch_tools)
+
 
     - name: Test with pytest
+      if: always()
       run: |
         pytest tests
 
+
     - name: Lint with Mypy
+      if: always()
       run: |
-        mypy $(git ls-files '*.py')
+        mypy $(git ls-files torch_tools)
+
 
     - name: Lint with Pydocstyle
+      if: always()
       run : |
-        pydocstyle $(git ls-files '*.py') --convention=numpy
+        pydocstyle $(git ls-files torch_tools) --convention=numpy
