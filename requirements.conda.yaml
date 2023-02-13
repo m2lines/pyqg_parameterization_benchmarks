@@ -1,6 +1,5 @@
 name: pyqg-param
 channels:
-  - defaults
   - anaconda
   - pytorch
   - conda-forge
