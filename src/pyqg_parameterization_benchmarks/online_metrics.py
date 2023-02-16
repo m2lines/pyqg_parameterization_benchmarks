@@ -5,10 +5,9 @@ from scipy.stats import wasserstein_distance
 from pyqg_parameterization_benchmarks.utils import FeatureExtractor
 
 
-# TODO: Add type-hints; correct docstring; use pythonic variable names
-def diagnostic_differences(ds1, ds2, T=10):
-    """One-line python summary docstring.
-
+# TODO: use pythonic variable names
+def diagnostic_differences(ds1, ds2, num_ending_timesteps=10):
+    """Distance metrics between dataset diagnostics.
 
     Compute distributional and spectral differences between two
     xarray.Dataset objects representing ensembles of pyqg simulations.
@@ -17,17 +16,23 @@ def diagnostic_differences(ds1, ds2, T=10):
 
     Parameters
     ----------
-    ds1 : ???
-        What is this quantity?
-    ds2 : ???
-        What is this quantity?
-    T : int(???)
-        What is this quantity?
+    ds1 : xarray.Dataset
+        Dataset of pyqg.QGModel runs
+    ds2 : xarray.Datasset
+        Dataset of pyqg.QGModel runs
+    num_ending_timesteps : int
+        When computing distributional differences, marginalize over this many
+        timesteps (starting from the end and going backwards). Increasing this
+        will smooth out differences but require more computational time. Note
+        that this should not be increased until before simulations transition
+        to quasi-steady state (exact crossover point depends on simulation
+        parameters).
+
 
     Returns
     -------
-    differences : Dict[str, ???]
-        What be differences?
+    differences : Dict[str, float]
+        Distance metrics between different diagnostics. See paper for details.
 
     Notes
     -----
@@ -66,7 +71,7 @@ def diagnostic_differences(ds1, ds2, T=10):
     for label, expr in distribution_quantities.items():
         for z in [0, 1]:
             # Flatten over space and the last T timesteps
-            ts = slice(-T, None)
+            ts = slice(-num_ending_timesteps, None)
             q1 = FeatureExtractor(ds1.isel(lev=z, time=ts))(expr).ravel()
             q2 = FeatureExtractor(ds2.isel(lev=z, time=ts))(expr).ravel()
             # Compute the empirical wasserstein distance
@@ -108,9 +113,8 @@ def diagnostic_differences(ds1, ds2, T=10):
     return differences
 
 
-# TODO: Fix docstring and add type-hinting.
 def diagnostic_similarities(model, target, baseline, **kwargs):
-    """One-line summary docstring.
+    """Similarity metrics between dataset diagnostics.
 
     Like `diagnostic_differences`, but returning a dictionary of similarity
     scores between negative infinity and 1 which quantify how much closer the
@@ -121,17 +125,25 @@ def diagnostic_similarities(model, target, baseline, **kwargs):
 
     Parameters
     ----------
-    model : ???
-        Is this a neural network model?
-    target : ???
-        A ground truth Tensor?
-    baseline : ???
-        What is this quantity?
+    model : xarray.Dataset
+        Dataset representing runs of a pyqg.QGModel to be evaluated for
+        similarity with respect to the ``target``. Typically, this is a dataset
+        of parameterized low-resolution pyqg.QGModel runs.
+    target : xarray.Dataset
+        Another dataset of pyqg.QGModel runs; we are attempting to quantify how
+        similar ``model`` is to this dataset. Typically, this is a dataset of
+        high-resolution pyqg.QGModel runs.
+    baseline : xarray.Dataset
+        A third dataset of pyqg.QGModel runs; we are quantifying how much more
+        similar ``model`` is to ``target`` than ``baseline`` is to ``target``.
+        Typically, this is a dataset of unparameterized low-resolution
+        pyqg.QGModel runs.
 
     Returns
     -------
-    sims : Dict[str, ???]
-        ?
+    sims : Dict[str, float]
+        Dictionary of similarity scores (between negative infinity and 1) of
+        ``model`` to ``target`` (relative to ``baseline``) for each diagnostic.
 
     """
     d1 = diagnostic_differences(model, target, **kwargs)

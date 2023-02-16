@@ -3,8 +3,6 @@ from typing import Tuple
 import os
 import glob
 import pickle
-
-
 import pyqg
 import torch
 from torch import (  # pylint: disable=no-name-in-module
@@ -29,20 +27,20 @@ class FullyCNN(Sequential):
 
     Parameters
     ----------
-    inputs : ???
-        The inputs to the model. Tensors?
-    targets : ???
-        The targets/ground truths. Tensors?
+    inputs : List[str]
+        The inputs to the model, represented as a list of string attributes
+        that indicate spatial field variables present on associated datasets.
+    targets : List[str]
+        The targets of the model, represented as a list of string attributes
+        that indicate spatial field variables present on associated datasets.
     padding : str, optional
-        The padding argument. The options seem to be ``None``, ``"circular"``
-        or ``"same"``, with zero explanation.
+        The padding argument. Should be one of ``None``, ``"circular"``
+        or ``"same"``.
     zero_mean : bool
         Controls whether the mean of each channel is standardised to zero
         after being passed through the ``forward`` method.
 
     """
-
-    # TODO: Supply types for ``inputs`` and ``targets`` in docstring.
 
     # TODO: Complete type-hinting in __init__ def.
     def __init__(
@@ -127,7 +125,9 @@ class FullyCNN(Sequential):
         return out
 
     def extract_vars(self, m, features, dtype=np.float32):
-        """Do something."""
+        """Take a list of string `features` and extract them from the
+        xarray.Dataset or pyqg.QGModel `m` as a numpy.ndarray of the associated
+        `dtype`."""
         # TODO: Provide docstring and type-hints.
         ex = FeatureExtractor(m)
 
@@ -138,17 +138,19 @@ class FullyCNN(Sequential):
         return arr
 
     def extract_inputs(self, m):
-        """Provide a docstring."""
+        """Take the input variable strings and extract a numpy array from the dataset or model `m`."""
         # TODO: Provide a docstring and type-hinting to explain this function.
         return self.extract_vars(m, self.inputs)
 
     def extract_targets(self, m):
-        """Extract targets from ???."""
+        """Take the target variable strings and extract a numpy array from the dataset or model `m`."""
         # TODO: Add docstring and type-hinting.
         return self.extract_vars(m, self.targets)
 
     def input_gradients(self, inputs, output_channel, j, i, device=None):
-        """Input the gradients to something."""
+        """The gradients of the model's output (at a given `output_channel` and
+        `i`, `j` spatial position) with respect to a list of string
+        `inputs`."""
         # TODO: Provide a docstring, types and maybe a 'Notes' section in doc.
         if device is None:
             device = torch.device("cuda:0" if cuda.is_available() else "cpu")
