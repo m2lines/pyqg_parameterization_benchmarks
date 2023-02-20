@@ -1,4 +1,5 @@
 import numpy as np
+import xarray as xr
 import pyqg
 from functools import cached_property
 try:
@@ -6,7 +7,7 @@ try:
 except ImportError:
     print("Could not import gcm_filters; Operator3 coarsening will not work")
 
-def config_for(model):
+def config_for(model: pyqg.QGModel) -> dict:
     """Return all parameters needed to initialize a new pyqg.QGModel similar to
     an existing ``model``, except for ``nx`` and ``ny``, so that the new model
     can be given a different resolution.
@@ -53,7 +54,7 @@ class Coarsener:
         self.m2._calc_derived_fields()
 
     @property
-    def q_forcing_total(self):
+    def q_forcing_total(self) -> np.ndarray:
         """Return the "total" subgrid forcing of the potential vorticity as the
         difference between PV tendencies when passing high-res and coarsened
         initial conditions through high-res and low-res models, respectively
@@ -70,7 +71,7 @@ class Coarsener:
             model._do_friction()
         return self.coarsen(self.m1.dqhdt) - self.to_real(self.m2.dqhdt)
 
-    def to_real(self, var):
+    def to_real(self, var: np.ndarray) -> np.ndarray:
         """Convert variable to real space, if needed.
 
         Parameters
@@ -89,7 +90,7 @@ class Coarsener:
                 return m.ifft(var)
         return var
 
-    def to_spec(self, var):
+    def to_spec(self, var: np.ndarray) -> np.ndarray:
         """Convert variable to spectral space, if needed.
 
         Parameters
@@ -108,12 +109,12 @@ class Coarsener:
                 return m.fft(var)
         return var
 
-    def subgrid_forcing(self, var):
+    def subgrid_forcing(self, var_name: str) -> np.ndarray:
         """Compute subgrid forcing of a given `var` (as string).
 
         Parameters
         ----------
-        var : str
+        var_name : str
             A string representing a variable, which must be an attribute of a
             pyqg.QGModel.
 
@@ -124,37 +125,37 @@ class Coarsener:
             coarsened advected quantity and the advected coarsened quantity.
 
         """
-        q1 = getattr(self.m1, var)
-        q2 = getattr(self.m2, var)
+        q1 = getattr(self.m1, var_name)
+        q2 = getattr(self.m2, var_name)
         adv1 = self.coarsen(self.m1._advect(q1))
         adv2 = self.to_real(self.m2._advect(q2))
         return adv1 - adv2
 
-    def subgrid_fluxes(self, var):
+    def subgrid_fluxes(self, var_name : str) -> tuple[np.ndarray, np.ndarray]:
         """Compute subgrid fluxes (wrt. u and v) of a given `var`.
 
         Parameters
         ----------
-        var : str
+        var_name : str
             A string representing a variable, which must be an attribute of a
             pyqg.QGModel.
 
         Returns
         -------
-        Tuple[numpy.ndarray, numpy.ndarray]
+        tuple[numpy.ndarray, numpy.ndarray]
             A tuple of two arrays representing the subgrid fluxes of the
             variable in the x- and y-directions. The divergence of these fluxes
             equals the ``subgrid_forcing``.
 
         """
-        q1 = getattr(self.m1, var)
-        q2 = getattr(self.m2, var)
+        q1 = getattr(self.m1, var_name)
+        q2 = getattr(self.m2, var_name)
         u_flux = self.coarsen(self.m1.ufull * q1) - self.m2.ufull * q2
         v_flux = self.coarsen(self.m1.vfull * q1) - self.m2.vfull * q2
         return u_flux, v_flux
 
     @property
-    def length_ratio(self):
+    def length_ratio(self) -> float:
         """Ratio of high-res to low-res grid length.
 
         Returns
@@ -164,7 +165,7 @@ class Coarsener:
         """
         return self.m1.nx / self.m2.nx
 
-    def coarsen(self, var):
+    def coarsen(self, var) -> np.ndarray:
         """Filter and coarse-grain a variable (as array).
 
         Parameters
@@ -176,7 +177,7 @@ class Coarsener:
         raise NotImplementedError()
 
     @cached_property
-    def ds1(self):
+    def ds1(self) -> xr.Dataset:
         """xarray representation of the high-res model.
 
         Returns
@@ -190,7 +191,7 @@ class Coarsener:
 class SpectralCoarsener(Coarsener):
     """Spectral truncation with a configurable filter."""
 
-    def coarsen(self, var):
+    def coarsen(self, var: np.ndarray) -> np.ndarray:
         """Filter and coarse-grain a variable by converting to spectral space,
         truncating modes, multiplying remaining modes by a spectral filter, and
         converting back to real space.
@@ -214,7 +215,7 @@ class SpectralCoarsener(Coarsener):
         return self.to_real(filtered)
 
     @property
-    def spectral_filter(self):
+    def spectral_filter(self) -> np.ndarray:
         """
         Returns
         -------
@@ -228,7 +229,7 @@ class Operator1(SpectralCoarsener):
     """Spectral truncation with a sharp filter."""
 
     @property
-    def spectral_filter(self):
+    def spectral_filter(self) -> np.ndarray:
         """
         Returns
         -------
@@ -244,7 +245,7 @@ class Operator2(SpectralCoarsener):
     """Spectral truncation with a softer Gaussian filter."""
 
     @property
-    def spectral_filter(self):
+    def spectral_filter(self) -> np.ndarray:
         """
         Returns
         -------
@@ -259,7 +260,7 @@ class Operator2(SpectralCoarsener):
 class Operator3(Coarsener):
     """Diffusion-based filter, then real-space coarsening."""
 
-    def coarsen(self, var):
+    def coarsen(self, var: np.ndarray) -> np.ndarray:
         """Filter and coarse-grain a variable by coarsening in real space
         (averaging over regions) after filtering with gcm_filters, which uses a
         diffusion-based method for smoothing out high-frequency variation

@@ -3,11 +3,12 @@ import gplearn
 import gplearn.genetic
 import numpy as np
 import xarray as xr
+from typing import Union
 from scipy.stats import pearsonr
 from sklearn.linear_model import LinearRegression
 from pyqg_parameterization_benchmarks.utils import FeatureExtractor, Parameterization
 
-def make_custom_gplearn_functions(ds):
+def make_custom_gplearn_functions(ds: xr.Dataset) -> list[gplearn.functions._Function]:
     """Define custom gplearn functions for spatial derivatives that are specific
     to the spatial shape of that particular dataset.
 
@@ -18,7 +19,7 @@ def make_custom_gplearn_functions(ds):
 
     Returns
     -------
-    List[gplearn.functions._Function]
+    list[gplearn.functions._Function]
         List of functions representing spatial differential operators that can
         be evaluated over the dataset during genetic programming
     """
@@ -43,10 +44,11 @@ def make_custom_gplearn_functions(ds):
         gplearn.functions._Function(function=adv, name='advected', arity=1),
     ]
 
-def run_gplearn_iteration(ds, target,
-        base_features=['q','u','v'],
-        base_functions=['add','mul'],
-        **kwargs):
+def run_gplearn_iteration(ds: xr.Dataset,
+        target: np.ndarray,
+        base_features: list[str] = ['q','u','v'],
+        base_functions: list[str] = ['add','mul'],
+        **kwargs) -> gplearn.genetic.SymbolicRegressor:
     """Run gplearn for one iteration using custom spatial derivatives.
 
     Parameters
@@ -112,7 +114,11 @@ def run_gplearn_iteration(ds, target,
 class LinearSymbolicRegression(Parameterization):
     """Linear regression parameterization on top of symbolic expressions."""
 
-    def __init__(self, lr1, lr2, inputs, target):
+    def __init__(self,
+            lr1: sklearn.linear_model.LinearRegression,
+            lr2: sklearn.linear_model.LinearRegression,
+            inputs: list[str],
+            target: str):
         """Initialize the parameterization. This is not intended to be called
         by the user directly; use the ``fit`` class method instead.
 
@@ -124,7 +130,7 @@ class LinearSymbolicRegression(Parameterization):
         lr2 : sklearn.linear_model.LinearRegression
             Linear model to predict the lower layer's target based on input
             expressions
-        inputs : List[str]
+        inputs : list[str]
             List of string input expressions and functions that can be
             extracted from a pyqg.QGModel or dataset using a
             ``FeatureExtractor``
@@ -138,28 +144,28 @@ class LinearSymbolicRegression(Parameterization):
         self.target = target
 
     @property
-    def targets(self):
+    def targets(self) -> list[str]:
         """
         Returns
         -------
-        List[str]
+        list[str]
             The targets of the parameterization
 
         """
         return [self.target]
 
     @property
-    def models(self):
+    def models(self) -> list[sklearn.linear_model.LinearRegression]:
         """
         Returns
         -------
-        List[sklearn.linear_model.LinearRegression]
+        list[sklearn.linear_model.LinearRegression]
             The linear models as a list
 
         """
         return [self.lr1, self.lr2]
 
-    def predict(self, model_or_dataset):
+    def predict(self, model_or_dataset: Union[xr.Dataset, pyqg.QGModel]) -> dict[str, np.ndarray]:
         """Make a prediction for a given model or dataset.
 
         Parameters
@@ -170,7 +176,7 @@ class LinearSymbolicRegression(Parameterization):
 
         Returns
         -------
-        result : Dict[str, numpy.ndarray]
+        result : dict[str, numpy.ndarray]
             For each string target expression, the predicted subgrid forcing
             (as an array with the same shape as the corresponding inputs in the
             model or dataset)
@@ -200,7 +206,7 @@ class LinearSymbolicRegression(Parameterization):
         return result
 
     @classmethod
-    def fit(kls, dataset, inputs, target='q_subgrid_forcing'):
+    def fit(kls, dataset: xr.Dataset, inputs: list[str], target: str = 'q_subgrid_forcing') -> 'LinearSymbolicRegression':
         """Fit a linear regression parameterization on top of the given
         ``dataset`` in terms of symbolic ``inputs``.
 
@@ -208,7 +214,7 @@ class LinearSymbolicRegression(Parameterization):
         ----------
         dataset : xarray.Dataset
             Dataset of pyqg.QGModel runs
-        inputs : List[str]
+        inputs : list[str]
             List of expressions that can be evaluated by a
             ``FeatureExtractor``, to be used as inputs for the linear
             regression models
@@ -233,7 +239,7 @@ class LinearSymbolicRegression(Parameterization):
             )
         return kls(*lrs, inputs, target)
 
-def corr(a,b):
+def corr(a: xr.DataArray, b: xr.DataArray) -> float:
     """Return the Pearson correlation between two spatial data arrays.
 
     Parameters
@@ -251,7 +257,11 @@ def corr(a,b):
     """
     return pearsonr(np.array(a.data).ravel(), np.array(b.data).ravel())[0]
 
-def hybrid_symbolic_regression(ds, target='q_subgrid_forcing', max_iters=10, verbose=True, **kw):
+def hybrid_symbolic_regression(ds: xr.Dataset,
+        target: str = 'q_subgrid_forcing',
+        max_iters: int = 10,
+        verbose: bool = True,
+        **kw) -> tuple[list[str], list[LinearSymbolicRegression]]:
     """Run hybrid symbolic and linear regression, using symbolic regression to
     find expressions correlated wit the output, then fitting linear regression
     to get an exact expression, then running symbolic regression again on the
@@ -273,7 +283,7 @@ def hybrid_symbolic_regression(ds, target='q_subgrid_forcing', max_iters=10, ver
 
     Returns
     -------
-    Tuple[List[str], List[LinearSymbolicRegression]]
+    tuple[list[str], list[LinearSymbolicRegression]]
         List of terms discovered at each iteration alongside list of linear
         symbolic regression parameterization objects (each fit to all terms
         available at corresponding iteration)
